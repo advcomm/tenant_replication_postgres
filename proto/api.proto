@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package api;
+
+service ApiService {
+  rpc Update (UpdateRequests) returns (UpdateResponse);
+  rpc EventStream (EventSubscription) returns (stream EventMessage);
+  rpc LoadData (LoadRequest) returns (stream LoadDataMessage);
+}
+
+message UpdateRequest {
+  string TXID = 1;
+  string TableName = 2;
+  string PK = 3;
+  int32 Action = 4;
+  UpdatePayload PayLoad = 5;
+}
+
+message UpdatePayload {
+  optional string Old = 1;
+  optional string New = 2;
+}
+
+
+
+
+
+message UpdateRequests {
+  repeated UpdateRequest requests = 1;
+}
+
+message UpdateResponse {
+  repeated string success = 1;
+  repeated FailedUpdate failed = 2;
+}
+
+message FailedUpdate {
+  string TXID = 1;
+  string ErrorDetail = 2;
+}
+
+message EventSubscription {
+  string deviceId = 1;
+  string userAgent = 2;
+}
+
+message LoadRequest {
+  string deviceId = 1;
+  string tableName = 2;
+  string lastUpdated = 3;
+  int32 TenantID = 4;
+}
+
+message LoadDataMessage {
+  string status = 1;
+  repeated DataRow rows = 2;
+  string error = 3;
+  bool completed = 4;
+}
+
+message DataRow {
+  map<string, string> fields = 1;
+}
+
+message EventMessage {
+  string deviceId = 1;
+  string userAgent = 2;
+  string payload = 3;
+}
