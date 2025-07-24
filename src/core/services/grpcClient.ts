@@ -39,10 +39,38 @@ const dbServiceDefinition = {
   }
 };
 
+// Lookup service definition for tenant shard mapping
+const lookupServiceDefinition = {
+  getTenantShard: {
+    path: '/MTDD.LookupService/getTenantShard',
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
+    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    responseDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
+  },
+  addTenantShard: {
+    path: '/MTDD.LookupService/addTenantShard',
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
+    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    responseDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
+  }
+};
+
 // Create gRPC client constructor
 const DBServiceClient = grpc.makeGenericClientConstructor(
   dbServiceDefinition,
   'DB'
+);
+
+// Create lookup service client constructor
+const LookupServiceClient = grpc.makeGenericClientConstructor(
+  lookupServiceDefinition,
+  'MTDD'
 );
 
 // Create client instances for all backend servers
@@ -51,6 +79,13 @@ const clients = backendServers.map(server =>
     `${server}:50053`,
     grpc.credentials.createInsecure()
   )
+);
+
+// Create lookup service client instance
+const lookupServer = process.env.LOOKUP_SERVER || '192.168.0.87'; // Default to first server or env var
+const lookupClient = new LookupServiceClient(
+  `${lookupServer}:50054`,
+  grpc.credentials.createInsecure()
 );
 
 // Parse response helper function
@@ -134,6 +169,72 @@ const callSpecificServer = async (tenantId: number, request: any): Promise<any> 
   });
 };
 
+// Function to call specific server by shard index
+const callSpecificServerByShard = async (shardIndex: number, request: any): Promise<any> => {
+  if (clients.length === 0) {
+    throw new Error('No backend servers available');
+  }
+
+  if (shardIndex < 0 || shardIndex >= clients.length) {
+    throw new Error(`Invalid shard index ${shardIndex}. Available shards: 0-${clients.length - 1}`);
+  }
+
+  const selectedClient = clients[shardIndex];
+
+  return new Promise((resolve, reject) => {
+    selectedClient.executeQuery(request, (error: any, response: any) => {
+      if (error) {
+        reject(error);
+      } else {
+        const parsedResponse = parseResponse(response);
+        resolve(parsedResponse);
+      }
+    });
+  });
+};
+
+// Function to get tenant shard from lookup service
+const getTenantShard = async (tenantName: string, tenantType: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const request = { tenantName, tenantType };
+    
+    lookupClient.getTenantShard(request, (error: any, response: any) => {
+      if (error) {
+        console.error(`❌ Error getting tenant shard for tenantName ${tenantName}:`, error.message);
+        reject(error);
+      } else {
+        const parsedResponse = parseResponse(response.result);
+        const shardId =parsedResponse[0].shard_idx ;
+        
+        if (shardId === undefined || shardId === null) {
+          reject(new Error(`Invalid shard response for tenantName ${tenantName}: ${JSON.stringify(parsedResponse)}`));
+        } else {
+          console.log(`📍 Tenant ${tenantName} mapped to shard ${shardId}`);
+          resolve(shardId);
+        }
+      }
+    });
+  });
+};
+
+// Function to add tenant shard mapping
+const addTenantShard = async (tenantName: string, tenantType: number): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const request = { tenantName, tenantType };
+    
+    lookupClient.addTenantShard(request, (error: any, response: any) => {
+      if (error) {
+        console.error(`❌ Error adding tenant shard mapping for tenantName ${tenantName}:`, error.message);
+        reject(error);
+      } else {
+        const parsedResponse = parseResponse(response);
+        console.log(`✅ Added tenant ${tenantName} to shard ${tenantType}`);
+        resolve(parsedResponse);
+      }
+    });
+  });
+};
+
 // Utility function to convert BigInt values to strings recursively
 function convertBigIntToString(obj: any): any {
   if (obj === null || obj === undefined) {
@@ -165,7 +266,7 @@ export class BackendClient {
   /**
    * @deprecated Use executeQuery instead
    */
-  static async callProcedure(procedureName: string, params: any[], isFunction: boolean = false, tenantId?: number): Promise<any> {
+  static async callProcedure(procedureName: string, params: any[], isFunction: boolean = false, tenantId?: string): Promise<any> {
     console.warn('⚠️ callProcedure is deprecated. Use executeQuery instead.');
     // Convert any BigInt values to strings before sending
     const convertedParams = convertBigIntToString(params);
@@ -178,9 +279,13 @@ export class BackendClient {
 
     try {
       if (tenantId !== undefined && tenantId !== null) {
-        // Call specific server based on TenantID
-        console.log(`📡 Calling procedure ${procedureName} on server ${tenantId % clients.length} (TenantID: ${tenantId})`);
-        return await callSpecificServer(tenantId, request);
+        // Get shard ID from lookup service for procedures too
+        console.log(`🔍 Looking up shard for tenant ${tenantId} (procedure: ${procedureName})`);
+        const shardId = await getTenantShard(tenantId, 1);
+        
+        // Call specific server based on shard ID from lookup service
+        console.log(`📡 Calling procedure ${procedureName} on shard ${shardId} (TenantID: ${tenantId})`);
+        return await callSpecificServerByShard(shardId, request);
       } else {
         // Call all servers concurrently and return first valid response
         console.log(`📡 Calling procedure ${procedureName} on all servers concurrently`);
@@ -242,7 +347,7 @@ export class BackendClient {
      * @param values Object containing parameter values like { id: 123, status: 'active' }
      * @returns Query result
      */
-   public static async executeQuery(query: string, values: Record<string, any> = {}, tenantId?: number): Promise<any> {
+   public static async executeQuery(query: string, values: Record<string, any> = {}, tenantName?: string): Promise<any> {
         const { query: processedQuery, params } = this.processNamedParameters(query, values);
         const convertedParams = convertBigIntToString(params);
 
@@ -252,10 +357,17 @@ export class BackendClient {
         };
 
         try {
-            if (tenantId !== undefined && tenantId !== null) {
-                // Call specific server based on TenantID
-                console.log(`📡 Executing query on server ${tenantId % clients.length} (TenantID: ${tenantId})`);
-                return await callSpecificServer(tenantId, request);
+            if (tenantName !== undefined && tenantName !== null) {
+
+            // await addTenantShard(tenantName, 1);
+
+                // Get shard ID from lookup service
+                console.log(`🔍 Looking up shard for tenant ${tenantName}`);
+                const shardId = await getTenantShard(tenantName, 1);
+                
+                // Call specific server based on shard ID from lookup service
+                console.log(`📡 Executing query on shard ${shardId} (tenantName: ${tenantName})`);
+                return await callSpecificServerByShard(shardId, request);
             } else {
                 // Call all servers concurrently and return first valid response
                 console.log(`📡 Executing query on all servers concurrently`);
@@ -267,6 +379,23 @@ export class BackendClient {
         }
     }
 
+
+  // Lookup service methods
+  /**
+   * Get the shard ID for a specific tenant
+   * @param tenantId The tenant ID to look up
+   * @returns Promise resolving to the shard ID
+   */
+ 
+
+  /**
+   * Add a tenant to shard mapping
+   * @param tenantId The tenant ID
+   * @param shardId The shard ID to assign the tenant to
+   * @returns Promise resolving to the operation result
+   */
+
+  
 
   // Channel listening using gRPC streaming
   static ListenToChannel(channel: string, callback: (msg: any) => void): void {

@@ -3,7 +3,6 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import * as path from 'path';
 import { BackendClient } from './grpcClient';
-import { getCurrentBackendClient } from './mockClient';
 import { HR } from '@advcomm/utils/dist/utils';
 import activeClients from '../helper/activeClients';
 import { RedisService } from '@advcomm/utils';
@@ -14,7 +13,7 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, { keepCase: true, lon
 const apiProto: any = grpc.loadPackageDefinition(packageDefinition).api;
 
 // Get the appropriate backend client (real or mock)
-const CurrentBackendClient = getCurrentBackendClient();
+const CurrentBackendClient = BackendClient;
 
 // Extension hooks
 let extensionStreamHandlers: ((stream: any) => void)[] = [];
@@ -80,6 +79,8 @@ const grpcHandlers = {
 
   Update: async (call: any, callback: any) => {
     const updates = call.request.requests;
+
+    const TenantName="chishtiaq422@gmail.com";
     const TenantID = 1; // TODO: get from metadata if needed
     let response: { success: string[]; failed: { TXID: string; ErrorDetail: string }[] } = { success: [], failed: [] };
     updates.sort((a: any, b: any) => a.TXID - b.TXID);
@@ -110,7 +111,7 @@ const grpcHandlers = {
                 timestamp: HR.ns(),
                 data: newData
               },
-              TenantID
+              TenantName
             );
           } else if (Action === 1) {
             // Parse the New payload from JSON string
@@ -122,7 +123,7 @@ const grpcHandlers = {
                 timestamp: HR.ns(),
                 data: newData
               },
-              TenantID
+              TenantName
             );
           } else if (Action === null) {
             await CurrentBackendClient.executeQuery(
@@ -133,7 +134,7 @@ const grpcHandlers = {
                 timestamp: HR.ns(),
                 txid: TXID
               },
-              TenantID
+              TenantName
             );
           } else {
             throw new Error(`Invalid action type ${Action}`);
