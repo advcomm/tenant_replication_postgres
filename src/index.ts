@@ -1,38 +1,18 @@
+import createCoreRoutes from "./core/routes/router";
+import  { Application } from "express";
+import * as knexHelper from './core/helper/knexHelper';
+import knex from 'knex';
 
-try {
-  process.loadEnvFile?.('.env');
-} catch (err) {
-  console.log('No .env file found, using default values');
+
+export async function InitializeReplication(app: Application, dbConnection: knex.Knex<any, unknown[]>)
+{
+const coreRoutes = createCoreRoutes(dbConnection);
+app.use('/mtdd', coreRoutes);
+
 }
 
-// Initialize the appropriate backend client
-import { BackendClient } from './core/services/grpcClient';
-import { getCurrentBackendClient } from './core/services/mockClient';
-import { startGrpcServer } from './core/services/grpcServer';
-import { loadCustomStreamHandlers } from './extension/plugins/loader';
+export default knexHelper;
 
 
-//const CurrentBackendClient = getCurrentBackendClient();
-//CurrentBackendClient.initialize(JSON.parse(process.env.DB_CONFIG || '{}')); } from '@advcomm/dbfacade';
-
-// Load .env file if it exists
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
-  process.exit(1);
-});
-
-// Load extension stream handlers
-loadCustomStreamHandlers();
-
-// Initialize both DatabaseFacade (for channel listening) and BackendClient (for procedure calls)
-//console.log('� Initializing database connections...');
-//DatabaseFacade.initialize(JSON.parse(process.env.DB_CONFIG || '{}'));
-//BackendClient.initialize(JSON.parse(process.env.DB_CONFIG || '{}'));
-
-// Start gRPC server
-const PORT = process.env.GRPC_PORT || '50051';
-console.log(`🚀 Starting gRPC server on port ${PORT}...`);
-startGrpcServer(PORT);
 
 

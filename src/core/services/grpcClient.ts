@@ -13,9 +13,34 @@ export interface ChannelResponse {
 
 // Backend servers configuration
 const backendServers: string[] = [];
+
 // Load from environment or use defaults
-const serverList = process.env.BACKEND_SERVERS?.split(',') || ['192.168.0.87', '192.168.0.2'];
-backendServers.push(...serverList);
+if (process.env.NODE_ENV !== 'development') {
+
+  const serverList = JSON.parse(process.env.BACKEND_SERVERS || '[]');
+  if (serverList)
+    backendServers.push(...serverList);
+  else
+    throw new Error('No backend servers configured. Please set BACKEND_SERVERS environment variable.');
+
+} else {
+  const serverList = JSON.parse(process.env.BACKEND_SERVERS || '["127.0.0.1"]');
+  backendServers.push(...serverList);
+}
+// Single server deployment detection
+const IS_SINGLE_SERVER_DEPLOYMENT = backendServers.length === 1;
+if (process.env.NODE_ENV !== 'development') {
+
+
+  console.log(`🏗️  [GRPC-CONFIG] Backend Servers: ${backendServers.length} server(s)`);
+  console.log(`🏗️  [GRPC-CONFIG] Servers: ${backendServers.join(', ')}`);
+  console.log(`🏗️  [GRPC-CONFIG] Deployment Mode: ${IS_SINGLE_SERVER_DEPLOYMENT ? 'Single Server (Simplified)' : 'Multi-Server (MTDD)'}`);
+
+
+  if (IS_SINGLE_SERVER_DEPLOYMENT) {
+    console.log(`🎯 [GRPC-CONFIG] Single server detected - MTDD optimizations will be bypassed for simplified routing`);
+  }
+}
 
 // Manual gRPC service definition for database operations
 const dbServiceDefinition = {
@@ -74,47 +99,136 @@ const LookupServiceClient = grpc.makeGenericClientConstructor(
 );
 
 // Create client instances for all backend servers
-const clients = backendServers.map(server => 
-  new DBServiceClient(
-    `${server}:50053`,
-    grpc.credentials.createInsecure()
-  )
-);
+const clients: any = backendServers.map(server => {
+  if (process.env.NODE_ENV !== 'development') {
+    return  new DBServiceClient(
+        `${server}`,
+        grpc.credentials.createSsl(Buffer.from(`-----BEGIN CERTIFICATE-----
+    MIIEDjCCAvagAwIBAgIUGCEDu7QmO7Sn1B23BNlfjf9tuRUwDQYJKoZIhvcNAQEL
+    BQAwczELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+    MRUwEwYDVQQKDAxPcmdhbml6YXRpb24xFjAUBgNVBAsMDUlUIERlcGFydG1lbnQx
+    FjAUBgNVBAMMDTk1LjIxNi4xODkuNjAwHhcNMjUwODE5MTMzODEwWhcNMjYwODE5
+    MTMzODEwWjBzMQswCQYDVQQGEwJVUzEOMAwGA1UECAwFU3RhdGUxDTALBgNVBAcM
+    BENpdHkxFTATBgNVBAoMDE9yZ2FuaXphdGlvbjEWMBQGA1UECwwNSVQgRGVwYXJ0
+    bWVudDEWMBQGA1UEAwwNOTUuMjE2LjE4OS42MDCCASIwDQYJKoZIhvcNAQEBBQAD
+    ggEPADCCAQoCggEBANVisy9f1amkVSc9tRgxOAhmbYo/T4x3FjEphHqvnY5feCH1
+    GkTl/LBMDwwHYMI1Jt7fqxR7R1X/FbH8ve37ovRjJsgh6zG61d/xdtz3xqmmUNuT
+    x+DU66KAP/6NjT1Xal7t1HfjKDqJ1cF9VfBpd8SlK1cSTlmM/w3Ayoka9+zksxeQ
+    zbz3/34rnCvTbUKJcGfBlh1b3GfJeoqHQBqtshU2AES90/INjtzDtUHY7FMR/6Mm
+    VsO1nhhgZTu/+JUvCE9WBxl5Teya9srHzt4uBmUPCgZbwigKnsUGwkv1Eniwo+MY
+    zDNsyVmWRAEcb3Uo+/YHx5pNfrlEYSZ+NdJW04UCAwEAAaOBmTCBljAOBgNVHQ8B
+    Af8EBAMCA6gwIAYDVR0lAQH/BBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMDUGA1Ud
+    EQEB/wQrMCmHBF/YvTyCDTk1LjIxNi4xODkuNjCCCWxvY2FsaG9zdIIHKi5sb2Nh
+    bDAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBR94NkZpzh55M17RTu4z+2je0XwITAN
+    BgkqhkiG9w0BAQsFAAOCAQEAqv/stnFVsNUlnba7RzsY743Nox/l24/aa+mbclyj
+    fwdlu5aIBT8PkROJg+Qp6TvexD/tiRT5zJFKO4yT/p5lDQb9bktKLzpaRoFfijV0
+    7cN5IyMMPcCZ+Oqv4WPSzOIsS3TRXXsA535I2wcota2JCsXTaEaivZ49eLAOT4X/
+    4yw5hdYCLCZoFKyoCi9fVRVpM0ktN3VtQE4+VfR7CVK6sSIW7DryxEd7hnjMdroo
+    1X6emed5cVU4ddys45QNX3yMo29jmFglC+fZryQulX1cqa3s1SR+tJWWxX0o+Drn
+    a3mUx29+bYa8bEo5+ePaewxP4YPCyKAHxjIMRS5SyMSIUw==
+    -----END CERTIFICATE-----`)),
+        {
+          'grpc.max_receive_message_length': 256 * 1024 * 1024,
+          'grpc.max_send_message_length': 256 * 1024 * 1024,
+          // ⬇️ Stop Node from sending SNI (prevents the RFC 6066 warning)
+         'grpc.ssl_target_name_override': 'localhost',
+      // Keep HTTP/2 :authority as the IP (so routing stays the same)
+      'grpc.default_authority': '95.216.189.60',
+        }
+      )
+    // return new DBServiceClient(
+    //   `${server}:50051`,
+    //   grpc.credentials.createInsecure()
+    // );
+  } else {
+    return undefined;
+  }
+
+});
 
 // Create lookup service client instance
-const lookupServer = process.env.LOOKUP_SERVER || '192.168.0.87'; // Default to first server or env var
-const lookupClient = new LookupServiceClient(
-  `${lookupServer}:50054`,
-  grpc.credentials.createInsecure()
-);
+const lookupServer = process.env.NODE_ENV !== 'development' ? JSON.parse(process.env.LOOKUP_SERVER || '["127.0.0.1"]') : '["127.0.0.1"]'; // Default to first server or env var
+if (!lookupServer) {
+  throw new Error('No lookup server configured. Please set LOOKUP_SERVER environment variable.');
+}
+let lookupClient: any;
+if (process.env.NODE_ENV !== 'development') {
+  lookupClient = new LookupServiceClient(
+    `${lookupServer[0]}`,
+    grpc.credentials.createSsl(Buffer.from(`-----BEGIN CERTIFICATE-----
+MIIEDjCCAvagAwIBAgIUGCEDu7QmO7Sn1B23BNlfjf9tuRUwDQYJKoZIhvcNAQEL
+BQAwczELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+MRUwEwYDVQQKDAxPcmdhbml6YXRpb24xFjAUBgNVBAsMDUlUIERlcGFydG1lbnQx
+FjAUBgNVBAMMDTk1LjIxNi4xODkuNjAwHhcNMjUwODE5MTMzODEwWhcNMjYwODE5
+MTMzODEwWjBzMQswCQYDVQQGEwJVUzEOMAwGA1UECAwFU3RhdGUxDTALBgNVBAcM
+BENpdHkxFTATBgNVBAoMDE9yZ2FuaXphdGlvbjEWMBQGA1UECwwNSVQgRGVwYXJ0
+bWVudDEWMBQGA1UEAwwNOTUuMjE2LjE4OS42MDCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBANVisy9f1amkVSc9tRgxOAhmbYo/T4x3FjEphHqvnY5feCH1
+GkTl/LBMDwwHYMI1Jt7fqxR7R1X/FbH8ve37ovRjJsgh6zG61d/xdtz3xqmmUNuT
+x+DU66KAP/6NjT1Xal7t1HfjKDqJ1cF9VfBpd8SlK1cSTlmM/w3Ayoka9+zksxeQ
+zbz3/34rnCvTbUKJcGfBlh1b3GfJeoqHQBqtshU2AES90/INjtzDtUHY7FMR/6Mm
+VsO1nhhgZTu/+JUvCE9WBxl5Teya9srHzt4uBmUPCgZbwigKnsUGwkv1Eniwo+MY
+zDNsyVmWRAEcb3Uo+/YHx5pNfrlEYSZ+NdJW04UCAwEAAaOBmTCBljAOBgNVHQ8B
+Af8EBAMCA6gwIAYDVR0lAQH/BBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMDUGA1Ud
+EQEB/wQrMCmHBF/YvTyCDTk1LjIxNi4xODkuNjCCCWxvY2FsaG9zdIIHKi5sb2Nh
+bDAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBR94NkZpzh55M17RTu4z+2je0XwITAN
+BgkqhkiG9w0BAQsFAAOCAQEAqv/stnFVsNUlnba7RzsY743Nox/l24/aa+mbclyj
+fwdlu5aIBT8PkROJg+Qp6TvexD/tiRT5zJFKO4yT/p5lDQb9bktKLzpaRoFfijV0
+7cN5IyMMPcCZ+Oqv4WPSzOIsS3TRXXsA535I2wcota2JCsXTaEaivZ49eLAOT4X/
+4yw5hdYCLCZoFKyoCi9fVRVpM0ktN3VtQE4+VfR7CVK6sSIW7DryxEd7hnjMdroo
+1X6emed5cVU4ddys45QNX3yMo29jmFglC+fZryQulX1cqa3s1SR+tJWWxX0o+Drn
+a3mUx29+bYa8bEo5+ePaewxP4YPCyKAHxjIMRS5SyMSIUw==
+-----END CERTIFICATE-----`)),
+    {
+      'grpc.max_receive_message_length': 256 * 1024 * 1024,
+      'grpc.max_send_message_length': 256 * 1024 * 1024,
+      // ⬇️ Stop Node from sending SNI (prevents the RFC 6066 warning)
+      'grpc.ssl_target_name_override': 'localhost',
+      // Keep HTTP/2 :authority as the IP (so routing stays the same)
+      'grpc.default_authority': '95.216.189.60',
+    }
+  );
+} else {
+  lookupClient = new LookupServiceClient(
+    `${lookupServer[0] + ':50054'}`,
+    grpc.credentials.createInsecure()
+  );
+}
 
-// Parse response helper function
+// Parse response helper function - extracts result data to match PostgreSQL format
 const parseResponse = (response: any): any => {
-  // If response is already properly formatted, return as-is
-  if (response && typeof response === 'object') {
+  // If response is null or undefined, return as-is
+  if (!response) {
     return response;
   }
-  
+  // If response is already properly formatted, return as-is
+  if (response && typeof response === 'object') {
+    console.log('🔧 [GRPC-RESPONSE] Response already in correct format');
+    return response;
+  }
+
   // Try to parse if it's a string
   if (typeof response === 'string') {
     try {
-      return JSON.parse(response);
+      const parsed = JSON.parse(response);
+      // Recursively process the parsed object to extract result if needed
+      return parseResponse(parsed);
     } catch {
       return { data: response };
     }
   }
-  
+
   return response;
 };
 
-// Function to call all servers concurrently and return first valid response
-const callAllServers = async (request: any): Promise<any> => {
+// Function to call all servers concurrently and return first valid response (Promise.race implementation)
+const callAllServersRace = async (request: any): Promise<any> => {
   if (clients.length === 0) {
     throw new Error('No backend servers available');
   }
 
   // Create promises for all gRPC calls
-  const promises = clients.map((client, index) => {
+  const promises = clients.map((client: any, index: number) => {
     return new Promise((resolve, reject) => {
       client.executeQuery(request, (error: any, response: any) => {
         if (error) {
@@ -130,22 +244,71 @@ const callAllServers = async (request: any): Promise<any> => {
     });
   });
 
-  // Use Promise.race to get the first successful response
+  // Use Promise.race to get the first response (success or failure)
+  return await Promise.race(promises);
+};
+
+// Function to call all servers and return first successful response (Promise.any implementation)
+const callAllServersAny = async (request: any): Promise<any> => {
+  if (clients.length === 0) {
+    throw new Error('No backend servers available');
+  }
+
+  // Create promises for all gRPC calls
+  const promises = clients.map((client: any, index: number) => {
+    return new Promise((resolve, reject) => {
+      client.executeQuery(request, (error: any, response: any) => {
+        if (error) {
+          reject(error);
+        } else if (response) {
+          // Parse the response before resolving
+          const parsedResponse = parseResponse(response);
+          resolve(parsedResponse);
+        } else {
+          reject(new Error(`No valid response from server ${index}`));
+        }
+      });
+    });
+  });
+
+  // Use Promise.any to get the first successful response
   try {
-    const response = await Promise.race(promises);
-    return response;
+    return await Promise.any(promises);
   } catch (error) {
-    // If all promises reject, try Promise.allSettled to get more details
-    const results = await Promise.allSettled(promises);
-    const successfulResult = results.find(result => result.status === 'fulfilled');
-    
-    if (successfulResult && successfulResult.status === 'fulfilled') {
-      return successfulResult.value;
-    }
-    
-    throw new Error('No valid response from any server');
+    // If all promises reject, throw an AggregateError
+    throw new Error('All servers failed to respond successfully');
   }
 };
+
+// Function to call all servers and wait for all responses (Promise.all implementation)
+const callAllServersAll = async (request: any): Promise<any[]> => {
+  if (clients.length === 0) {
+    throw new Error('No backend servers available');
+  }
+
+  // Create promises for all gRPC calls
+  const promises = clients.map((client: any, index: number) => {
+    return new Promise((resolve, reject) => {
+      client.executeQuery(request, (error: any, response: any) => {
+        if (error) {
+          reject(error);
+        } else if (response) {
+          // Parse the response before resolving
+          const parsedResponse = parseResponse(response);
+          resolve(parsedResponse);
+        } else {
+          reject(new Error(`No valid response from server ${index}`));
+        }
+      });
+    });
+  });
+
+  // Use Promise.all to wait for all responses
+  return await Promise.all(promises);
+};
+
+// Legacy function - kept for backward compatibility
+const callAllServers = callAllServersAny;
 
 // Function to call specific server based on TenantID
 const callSpecificServer = async (tenantId: number, request: any): Promise<any> => {
@@ -197,15 +360,15 @@ const callSpecificServerByShard = async (shardIndex: number, request: any): Prom
 const getTenantShard = async (tenantName: string, tenantType: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const request = { tenantName, tenantType };
-    
+
     lookupClient.getTenantShard(request, (error: any, response: any) => {
       if (error) {
         console.error(`❌ Error getting tenant shard for tenantName ${tenantName}:`, error.message);
         reject(error);
       } else {
-        const parsedResponse = parseResponse(response.result);
-        const shardId =parsedResponse[0].shard_idx ;
-        
+        const parsedResponse = parseResponse(response);
+        const shardId = parsedResponse.rows[0].shard_idx;
+
         if (shardId === undefined || shardId === null) {
           reject(new Error(`Invalid shard response for tenantName ${tenantName}: ${JSON.stringify(parsedResponse)}`));
         } else {
@@ -221,7 +384,7 @@ const getTenantShard = async (tenantName: string, tenantType: number): Promise<n
 const addTenantShard = async (tenantName: string, tenantType: number): Promise<any> => {
   return new Promise((resolve, reject) => {
     const request = { tenantName, tenantType };
-    
+
     lookupClient.addTenantShard(request, (error: any, response: any) => {
       if (error) {
         console.error(`❌ Error adding tenant shard mapping for tenantName ${tenantName}:`, error.message);
@@ -240,15 +403,15 @@ function convertBigIntToString(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  
+
   if (typeof obj === 'bigint') {
     return obj.toString();
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(convertBigIntToString);
   }
-  
+
   if (typeof obj === 'object') {
     const converted: any = {};
     for (const [key, value] of Object.entries(obj)) {
@@ -256,13 +419,13 @@ function convertBigIntToString(obj: any): any {
     }
     return converted;
   }
-  
+
   return obj;
 }
 
 // Main interface that replaces DatabaseFacade calls
 export class BackendClient {
-  
+
   /**
    * @deprecated Use executeQuery instead
    */
@@ -270,7 +433,7 @@ export class BackendClient {
     console.warn('⚠️ callProcedure is deprecated. Use executeQuery instead.');
     // Convert any BigInt values to strings before sending
     const convertedParams = convertBigIntToString(params);
-    
+
     const request = {
       name: procedureName,
       params: convertedParams || [],
@@ -282,7 +445,7 @@ export class BackendClient {
         // Get shard ID from lookup service for procedures too
         console.log(`🔍 Looking up shard for tenant ${tenantId} (procedure: ${procedureName})`);
         const shardId = await getTenantShard(tenantId, 1);
-        
+
         // Call specific server based on shard ID from lookup service
         console.log(`📡 Calling procedure ${procedureName} on shard ${shardId} (TenantID: ${tenantId})`);
         return await callSpecificServerByShard(shardId, request);
@@ -306,96 +469,436 @@ export class BackendClient {
 
 
 
- private static processNamedParameters(query: string, values: Record<string, any> = {}): { query: string; params: any[] } {
-        // Find all named parameters in the query (e.g., ${id}, ${status})
-        const parameterRegex = /\$\{(\w+)\}/g;
-        const foundParameters: string[] = [];
-        const params: any[] = [];
-        let match;
+  /**
+   * Check if query contains named parameters (e.g., ${id}, ${status})
+   * @param query SQL query to check
+   * @returns true if query contains named parameters, false otherwise
+   */
+  private static hasNamedParameters(query: string): boolean {
+    const parameterRegex = /\$\{(\w+)\}/g;
+    return parameterRegex.test(query);
+  }
 
-        // Extract all parameter names from the query
-        while ((match = parameterRegex.exec(query)) !== null) {
-            foundParameters.push(match[1]);
-        }
+  /**
+   * Check if query contains Knex-style question mark placeholders
+   * @param query SQL query to check
+   * @returns true if query contains ? placeholders, false otherwise
+   */
+  private static hasQuestionMarkParameters(query: string): boolean {
+    return query.includes('?');
+  }
 
-        // Check if all found parameters exist in values object
-        const missingParameters = foundParameters.filter(param => !(param in values));
-        if (missingParameters.length > 0) {
-            throw new Error(`Missing parameters: ${missingParameters.join(', ')}. Required parameters: ${foundParameters.join(', ')}`);
-        }
+  /**
+   * Convert Knex-style question mark placeholders to PostgreSQL positional parameters
+   * @param query SQL query with ? placeholders
+   * @returns query with $1, $2, etc. placeholders
+   */
+  private static convertQuestionMarksToPositional(query: string): string {
+    let paramIndex = 1;
+    return query.replace(/\?/g, () => `$${paramIndex++}`);
+  }
 
-        // Replace named parameters with PostgreSQL positional parameters ($1, $2, etc.)
-        let processedQuery = query;
-        let paramIndex = 1;
-        
-        foundParameters.forEach(paramName => {
-            const namedParam = `\${${paramName}}`;
-            const positionalParam = `$${paramIndex}`;
-            
-            // Replace the first occurrence of this named parameter
-            processedQuery = processedQuery.replace(namedParam, positionalParam);
-            params.push(values[paramName]);
-            paramIndex++;
-        });
+  private static processNamedParameters(query: string, values: Record<string, any> = {}): { query: string; params: any[] } {
+    // Find all named parameters in the query (e.g., ${id}, ${status})
+    const parameterRegex = /\$\{(\w+)\}/g;
+    const foundParameters: string[] = [];
+    const params: any[] = [];
+    let match;
 
-        return { query: processedQuery, params };
+    // Extract all parameter names from the query
+    while ((match = parameterRegex.exec(query)) !== null) {
+      foundParameters.push(match[1]);
     }
 
-    /**
-     * Executes a query with named parameters
-     * @param query SQL query with named parameters like 'SELECT * FROM users WHERE id = ${id}'
-     * @param values Object containing parameter values like { id: 123, status: 'active' }
-     * @returns Query result
-     */
-   public static async executeQuery(query: string, values: Record<string, any> = {}, tenantName?: string): Promise<any> {
-        const { query: processedQuery, params } = this.processNamedParameters(query, values);
-        const convertedParams = convertBigIntToString(params);
+    // Check if all found parameters exist in values object
+    const missingParameters = foundParameters.filter(param => !(param in values));
+    if (missingParameters.length > 0) {
+      throw new Error(`Missing parameters: ${missingParameters.join(', ')}. Required parameters: ${foundParameters.join(', ')}`);
+    }
 
-        const request = {
-            query: processedQuery,
-            params: convertedParams || []
-        };
+    // Replace named parameters with PostgreSQL positional parameters ($1, $2, etc.)
+    let processedQuery = query;
+    let paramIndex = 1;
 
-        try {
-            if (tenantName !== undefined && tenantName !== null) {
+    foundParameters.forEach(paramName => {
+      const namedParam = `\${${paramName}}`;
+      const positionalParam = `$${paramIndex}`;
 
-            // await addTenantShard(tenantName, 1);
+      // Replace the first occurrence of this named parameter
+      processedQuery = processedQuery.replace(namedParam, positionalParam);
+      params.push(values[paramName]);
+      paramIndex++;
+    });
 
-                // Get shard ID from lookup service
-                console.log(`🔍 Looking up shard for tenant ${tenantName}`);
-                const shardId = await getTenantShard(tenantName, 1);
-                
-                // Call specific server based on shard ID from lookup service
-                console.log(`📡 Executing query on shard ${shardId} (tenantName: ${tenantName})`);
-                return await callSpecificServerByShard(shardId, request);
+    return { query: processedQuery, params };
+  }
+
+  /**
+   * Executes a query with named parameters
+   * @param query SQL query with named parameters like 'SELECT * FROM users WHERE id = ${id}'
+   * @param values Object containing parameter values like { id: 123, status: 'active' }
+   * @returns Query result
+   */
+  public static async executeQuery(query: string, valuesOrBindings: Record<string, any> | any[] = {}, tenantName?: string): Promise<any> {
+    // Single server deployment optimization
+    if (IS_SINGLE_SERVER_DEPLOYMENT) {
+      console.log(`🎯 [SINGLE-SERVER] Simplified routing - executing on single server (${backendServers[0]})`);
+
+      let processedQuery = query;
+      let params: any[];
+
+      // Handle both named parameters and direct bindings array
+      if (Array.isArray(valuesOrBindings)) {
+        // Direct bindings array from Knex - convert ? to $1, $2, etc.
+        params = valuesOrBindings;
+        if (this.hasQuestionMarkParameters(query)) {
+          processedQuery = this.convertQuestionMarksToPositional(query);
+          console.log(`� [SINGLE-SERVER] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+        }
+        console.log(`�📝 [SINGLE-SERVER] Using direct bindings array:`, params);
+      } else if (this.hasNamedParameters(query)) {
+        // Named parameters - convert to positional
+        const result = this.processNamedParameters(query, valuesOrBindings);
+        processedQuery = result.query;
+        params = result.params;
+      } else if (this.hasQuestionMarkParameters(query)) {
+        // Knex-style ? parameters without bindings array
+        processedQuery = this.convertQuestionMarksToPositional(query);
+        params = [];
+        console.log(`🔄 [SINGLE-SERVER] Converted ? placeholders to PostgreSQL format (no bindings):`, processedQuery);
+      } else {
+        // No parameters or empty object
+        params = [];
+      }
+
+      const convertedParams = convertBigIntToString(params);
+      const request = {
+        query: processedQuery,
+        params: convertedParams || []
+      };
+
+      try {
+        console.log(`📡 [SINGLE-SERVER] Executing query directly on ${backendServers[0]}`);
+
+        const selectedClient = clients[0]; // Use first (and only) client
+
+        return new Promise((resolve, reject) => {
+          selectedClient.executeQuery(request, (error: any, response: any) => {
+            if (error) {
+              console.error(`❌ [SINGLE-SERVER] Query execution failed:`, error.message);
+              reject(error);
             } else {
-                // Call all servers concurrently and return first valid response
-                console.log(`📡 Executing query on all servers concurrently`);
-                return await callAllServers(request);
+              const parsedResponse = parseResponse(response);
+              console.log(`✅ [SINGLE-SERVER] Query executed successfully`);
+              resolve(parsedResponse);
             }
-        } catch (error: any) {
-            console.error(`❌ Backend client error for query execution:`, error.message);
-            throw error;
-        }
+          });
+        });
+      } catch (error: any) {
+        console.error(`❌ [SINGLE-SERVER] Query execution failed:`, error.message);
+        throw error;
+      }
     }
+
+    // Multi-server deployment with MTDD routing
+    let processedQuery = query;
+    let params: any[];
+
+    // Handle both named parameters and direct bindings array
+    if (Array.isArray(valuesOrBindings)) {
+      // Direct bindings array from Knex - convert ? to $1, $2, etc.
+      params = valuesOrBindings;
+      if (this.hasQuestionMarkParameters(query)) {
+        processedQuery = this.convertQuestionMarksToPositional(query);
+        console.log(`🔄 [MULTI-SERVER] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+      }
+    } else if (this.hasNamedParameters(query)) {
+      // Named parameters - convert to positional
+      const result = this.processNamedParameters(query, valuesOrBindings);
+      processedQuery = result.query;
+      params = result.params;
+    } else if (this.hasQuestionMarkParameters(query)) {
+      // Knex-style ? parameters without bindings array
+      processedQuery = this.convertQuestionMarksToPositional(query);
+      params = [];
+      console.log(`🔄 [MULTI-SERVER] Converted ? placeholders to PostgreSQL format (no bindings):`, processedQuery);
+    } else {
+      // No parameters or empty object
+      params = [];
+    }
+
+    const convertedParams = convertBigIntToString(params);
+
+    const request = {
+      query: processedQuery,
+      params: convertedParams || []
+    };
+
+    try {
+      if (tenantName !== undefined && tenantName !== null) {
+
+        // await addTenantShard(tenantName, 1);
+
+        // Get shard ID from lookup service
+        console.log(`🔍 Looking up shard for tenant ${tenantName}`);
+        const shardId = await getTenantShard(tenantName, 1);
+
+        // Call specific server based on shard ID from lookup service
+        console.log(`📡 Executing query on shard ${shardId} (tenantName: ${tenantName})`);
+        return await callSpecificServerByShard(shardId, request);
+      } else {
+        // Call all servers concurrently and return first valid response
+        console.log(`📡 Executing query on all servers concurrently`);
+        return await callAllServers(request);
+      }
+    } catch (error: any) {
+      console.error(`❌ Backend client error for query execution:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute query on all servers using Promise.race strategy
+   * Returns the first response (success or failure)
+   * @param query SQL query with named parameters
+   * @param values Parameter values
+   * @returns First response from any server
+   */
+  public static async executeQueryRace(query: string, valuesOrBindings: Record<string, any> | any[] = {}): Promise<any> {
+    let processedQuery = query;
+    let params: any[] = [];
+
+    // Handle both named parameters and direct bindings array
+    if (Array.isArray(valuesOrBindings)) {
+      // Direct bindings array from Knex - convert ? to $1, $2, etc.
+      params = valuesOrBindings;
+      if (this.hasQuestionMarkParameters(query)) {
+        processedQuery = this.convertQuestionMarksToPositional(query);
+        console.log(`🔄 [MULTI-SERVER-RACE] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+      }
+    } else if (this.hasNamedParameters(query)) {
+      // Named parameters - convert to positional
+      const result = this.processNamedParameters(query, valuesOrBindings);
+      processedQuery = result.query;
+      params = result.params;
+    } else if (this.hasQuestionMarkParameters(query)) {
+      // Knex-style ? parameters without bindings array
+      processedQuery = this.convertQuestionMarksToPositional(query);
+      params = [];
+      console.log(`🔄 [MULTI-SERVER-RACE] Converted ? placeholders to PostgreSQL format (no bindings):`, processedQuery);
+    }
+
+    const convertedParams = convertBigIntToString(params);
+
+    const request = {
+      query: processedQuery,
+      params: convertedParams || []
+    };
+
+    try {
+      console.log(`📡 Executing query on all servers using Promise.race`);
+      return await callAllServersRace(request);
+    } catch (error: any) {
+      console.error(`❌ Backend client error for race query execution:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute query on all servers using Promise.any strategy
+   * Returns the first successful response, ignores failures
+   * @param query SQL query with named parameters
+   * @param values Parameter values
+   * @returns First successful response from any server
+   */
+  public static async executeQueryAny(query: string, valuesOrBindings: Record<string, any> | any[] = {}): Promise<any> {
+    let processedQuery = query;
+    let params: any[] = [];
+
+    // Handle both named parameters and direct bindings array
+    if (Array.isArray(valuesOrBindings)) {
+      // Direct bindings array from Knex - convert ? to $1, $2, etc.
+      params = valuesOrBindings;
+      if (this.hasQuestionMarkParameters(query)) {
+        processedQuery = this.convertQuestionMarksToPositional(query);
+        console.log(`🔄 [MULTI-SERVER-ANY] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+      }
+    } else if (this.hasNamedParameters(query)) {
+      // Named parameters - convert to positional
+      const result = this.processNamedParameters(query, valuesOrBindings);
+      processedQuery = result.query;
+      params = result.params;
+    } else if (this.hasQuestionMarkParameters(query)) {
+      // Knex-style ? parameters without bindings array
+      processedQuery = this.convertQuestionMarksToPositional(query);
+      params = [];
+      console.log(`🔄 [MULTI-SERVER-ANY] Converted ? placeholders to PostgreSQL format (no bindings):`, processedQuery);
+    }
+
+    const convertedParams = convertBigIntToString(params);
+
+    const request = {
+      query: processedQuery,
+      params: convertedParams || []
+    };
+
+    try {
+      console.log(`📡 Executing query on all servers using Promise.any`);
+      return await callAllServersAny(request);
+    } catch (error: any) {
+      console.error(`❌ Backend client error for any query execution:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute query on all servers using Promise.all strategy
+   * Waits for all servers to respond and returns all responses
+   * @param query SQL query with named parameters
+   * @param values Parameter values
+   * @returns Array of responses from all servers
+   */
+  public static async executeQueryAll(query: string, valuesOrBindings: Record<string, any> | any[] = {}): Promise<any[]> {
+    // Single server deployment optimization - return single result in array format
+    if (IS_SINGLE_SERVER_DEPLOYMENT) {
+      console.log(`🎯 [SINGLE-SERVER] executeQueryAll - using single server result (${backendServers[0]})`);
+      const singleResult = await this.executeQuery(query, valuesOrBindings);
+      return [singleResult]; // Wrap single result in array to maintain API compatibility
+    }
+
+    // Multi-server deployment
+    let processedQuery = query;
+    let params: any[];
+
+    // Handle both named parameters and direct bindings array
+    if (Array.isArray(valuesOrBindings)) {
+      // Direct bindings array from Knex - convert ? to $1, $2, etc.
+      params = valuesOrBindings;
+      if (this.hasQuestionMarkParameters(query)) {
+        processedQuery = this.convertQuestionMarksToPositional(query);
+        console.log(`🔄 [MULTI-SERVER-ALL] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+      }
+    } else if (this.hasNamedParameters(query)) {
+      // Named parameters - convert to positional
+      const result = this.processNamedParameters(query, valuesOrBindings);
+      processedQuery = result.query;
+      params = result.params;
+    } else if (this.hasQuestionMarkParameters(query)) {
+      // Knex-style ? parameters without bindings array
+      processedQuery = this.convertQuestionMarksToPositional(query);
+      params = [];
+      console.log(`🔄 [MULTI-SERVER-ALL] Converted ? placeholders to PostgreSQL format (no bindings):`, processedQuery);
+    } else {
+      // No parameters or empty object
+      params = [];
+    }
+
+    const convertedParams = convertBigIntToString(params);
+
+    const request = {
+      query: processedQuery,
+      params: convertedParams || []
+    };
+
+    try {
+      console.log(`📡 Executing query on all servers using Promise.all`);
+      return await callAllServersAll(request);
+    } catch (error: any) {
+      console.error(`❌ Backend client error for all query execution:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute query on all servers using Promise.allSettled strategy
+   * Waits for all servers to respond and returns all results (success and failures)
+   * @param query SQL query with named parameters
+   * @param values Parameter values
+   * @returns Array of PromiseSettledResult objects from all servers
+   */
+  public static async executeQueryAllSettled(query: string, valuesOrBindings: Record<string, any> | any[] = {}): Promise<PromiseSettledResult<any>[]> {
+    let processedQuery = query;
+    let params: any[] = [];
+
+    // Handle both named parameters and direct bindings array
+    if (Array.isArray(valuesOrBindings)) {
+      // Direct bindings array from Knex - convert ? to $1, $2, etc.
+      params = valuesOrBindings;
+      if (this.hasQuestionMarkParameters(query)) {
+        processedQuery = this.convertQuestionMarksToPositional(query);
+        console.log(`🔄 [MULTI-SERVER-SETTLED] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+      }
+    } else if (this.hasNamedParameters(query)) {
+      // Named parameters - convert to positional
+      const result = this.processNamedParameters(query, valuesOrBindings);
+      processedQuery = result.query;
+      params = result.params;
+    } else if (this.hasQuestionMarkParameters(query)) {
+      // Knex-style ? parameters without bindings array
+      processedQuery = this.convertQuestionMarksToPositional(query);
+      params = [];
+      console.log(`🔄 [MULTI-SERVER-SETTLED] Converted ? placeholders to PostgreSQL format (no bindings):`, processedQuery);
+    }
+
+    const convertedParams = convertBigIntToString(params);
+
+    const request = {
+      query: processedQuery,
+      params: convertedParams || []
+    };
+
+    if (clients.length === 0) {
+      throw new Error('No backend servers available');
+    }
+
+    // Create promises for all gRPC calls
+    const promises = clients.map((client: any, index: number) => {
+      return new Promise((resolve, reject) => {
+        client.executeQuery(request, (error: any, response: any) => {
+          if (error) {
+            reject(error);
+          } else if (response) {
+            const parsedResponse = parseResponse(response);
+            resolve(parsedResponse);
+          } else {
+            reject(new Error(`No valid response from server ${index}`));
+          }
+        });
+      });
+    });
+
+    try {
+      console.log(`📡 Executing query on all servers using Promise.allSettled`);
+      return await Promise.allSettled(promises);
+    } catch (error: any) {
+      console.error(`❌ Backend client error for allSettled query execution:`, error.message);
+      throw error;
+    }
+  }
 
 
   // Lookup service methods
   /**
    * Get the shard ID for a specific tenant
-   * @param tenantId The tenant ID to look up
+   * @param tenantName The tenant name to look up
+   * @param tenantType The tenant type (default: 1)
    * @returns Promise resolving to the shard ID
    */
- 
+  public static async getTenantShard(tenantName: string, tenantType: number = 1): Promise<number> {
+    return await getTenantShard(tenantName, tenantType);
+  }
 
   /**
    * Add a tenant to shard mapping
-   * @param tenantId The tenant ID
-   * @param shardId The shard ID to assign the tenant to
+   * @param tenantName The tenant name
+   * @param tenantType The tenant type (default: 1)
    * @returns Promise resolving to the operation result
    */
+  public static async addTenantShard(tenantName: string, tenantType: number = 1): Promise<any> {
+    return await addTenantShard(tenantName, tenantType);
+  }
 
-  
+
 
   // Channel listening using gRPC streaming
   static ListenToChannel(channel: string, callback: (msg: any) => void): void {

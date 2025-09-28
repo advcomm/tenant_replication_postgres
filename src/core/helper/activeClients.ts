@@ -1,22 +1,18 @@
+import express from 'express';
 import admin from "firebase-admin";
 
 export default class ActiveClients {
-     static web = new Map<string, Map<string, any>>(); // { deviceId -> { eventName -> grpcStream } }
+     static web = new Map<string, Map<string, express.Response>>(); // { deviceId -> { eventName -> res } }
      static mobile = new Map<string, string>(); // { deviceId -> fcmToken }
     
 
      static firebase : admin.app.App | null = null ;
 
      static InitializeFirebase() {
-       try {
-         ActiveClients.firebase = admin.initializeApp({
-           credential: admin.credential.cert(require("./firebase-service-account.json")),
-         });
-       } catch (error) {
-         console.warn('Firebase service account not found, Firebase features will be disabled');
-         ActiveClients.firebase = null;
-       }
-     }
+   ActiveClients.firebase =  admin.initializeApp({
+      credential: admin.credential.cert(require("./firebase-service-account.json")),
+    });
+  }
 
     static DeleteWebDeviceEvents(deviceId: string, eventName: string) {
         const deviceEvents = ActiveClients.web.get(deviceId);
@@ -30,11 +26,11 @@ export default class ActiveClients {
     }
 
 
-    static AddWebDeviceEvent(deviceId: string, eventName: string, stream: any) {
+    static AddWebDeviceEvent(deviceId: string, eventName: string, res: express.Response) {
         if (!ActiveClients.web.has(deviceId)) {
             ActiveClients.web.set(deviceId, new Map());
         }
-        ActiveClients.web.get(deviceId)?.set(eventName, stream);
+        ActiveClients.web.get(deviceId)?.set(eventName, res);
         console.log(`✅ Device registered: ${deviceId}`);
     }
 
@@ -48,12 +44,8 @@ export default class ActiveClients {
         if(ActiveClients.firebase === null) {
           ActiveClients.InitializeFirebase();
         }
-        if(ActiveClients.firebase) {
-          ActiveClients.mobile.set(deviceId, fcmToken);
-          console.log(`✅ Mobile device registered: ${deviceId}`);
-        } else {
-          console.warn(`⚠️ Firebase not available, mobile device ${deviceId} not registered`);
-        }
+        ActiveClients.mobile.set(deviceId, fcmToken);
+        console.log(`✅ Device registered: ${deviceId}`);
     }
 
    static DeleteMobileDevice(deviceId: string) {
