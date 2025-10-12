@@ -8,9 +8,9 @@ export { FirebaseConfig } from './core/helper/activeClients';
 export { default as ActiveClients } from './core/helper/activeClients';
 
 
-export async function InitializeReplication(app: Application, dbConnection: knex.Knex<any, unknown[]>)
+export async function InitializeReplication(app: Application, dbConnection: knex.Knex<any, unknown[]>, constants:any)
 {
-const coreRoutes = createCoreRoutes(dbConnection);
+const coreRoutes = createCoreRoutes(dbConnection, constants);
 app.use('/mtdd', coreRoutes);
 
 }

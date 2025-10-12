@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import ActiveClients from '../helper/activeClients';
 import { RedisService } from '@advcomm/utils';
 import { decodeAccessToken } from "@advcomm/utils/dist/helper/authenticationHelper";
@@ -8,7 +8,7 @@ import { db as knexHelperDb } from '../helper/knexHelper';
 
 const PortalInfo = JSON.parse(process.env.PortalInfo || '{}')!;
 
-export function createCoreRoutes(dbConnection: Knex): Router {
+export function createCoreRoutes(dbConnection: Knex, constants: any): Router {
 // Check if the provided dbConnection is the same as the one from knexHelper (which has MTDD enabled)
 const db = dbConnection === knexHelperDb ? dbConnection : (() => {
   console.warn('⚠️ Warning: Provided dbConnection is not the same as knexHelper db instance. MTDD functionality may not be available.');
@@ -18,6 +18,7 @@ const db = dbConnection === knexHelperDb ? dbConnection : (() => {
 
 const router = Router();
 
+type TableName = keyof typeof constants.table_query_params;
 class UpdatePayload {
     New!: {
       CategoryID: number;
@@ -105,48 +106,42 @@ class UpdatePayload {
 //     res.json(response);
 // });
 
-router.get("/Load", async (req: any, res: any) => {
-    const TenantID= req.tid;
-    const sub = req.sub;
-    const roles = req.roles || [];
-   // const deviceId = req.headers?.deviceid as string;
-try {
-  const {  tableName, lastUpdated } = req.query;
-  const deviceId = (req.query?.deviceId || req.headers?.deviceid) as string;
-      console.log(`📊 LoadData -  Table: ${tableName}, User: ${sub}, TenantID: ${TenantID}, Roles: ${roles.join(', ')}, LastUpdated: ${lastUpdated}`);
-
-      // Validate required parameters
-      if (!tableName) {
-       res.send(  {error: 'Missing required parameters: tableName'}) 
-        return;
-      }
-
- //   var tenantShard=await  BackendClient.getTenantShard(TenantID);
-
-      // const redisInstance = RedisService.getInstance();
-        // await redisInstance.sadd(`${tableName}:${PortalInfo.TenantColumnName}:${TenantID}`, `${deviceId}:items_view`);
-
-
-      // Default lastUpdated to current timestamp if not provided
-      const lastUpdatedParam = lastUpdated || (Date.now() * 1000);
-      // Execute the database query using authenticated tenant ID
-      const result = await db.raw(
-        `SELECT * FROM get_${tableName}(?, ?)`,
-        [
-          lastUpdatedParam,
-          TenantID
-        ]
-      ).mtdd();
-
-      console.log(`📊 LoadData - Result:`, result);
-
-    res.status(200).json(result.rows);
-    
-    } catch (error: any) {
-      console.error(`❌ LoadData error:`, error);
-    res.status(500).json({ message: 'LoadData request failed', error: error.message });
+router.get('/mtdd/Load', async (req: any, res: Response) => {
+	const v_tableName = req.query.tableName;
+	const v_lastUpdated = Number(req.query.lastUpdated);
+	if (isNaN(v_lastUpdated))
+		{
+      res.status(400).send('Invalid lastUpdated parameter');
+    return ;
     }
-    return; 
+	console.log('v_tableName:', v_tableName, 'v_lastUpdated:', v_lastUpdated);
+	if (!Object.hasOwn(constants.table_query_params, v_tableName)) {
+		console.warn(`Invalid tableName: ${v_tableName}`);
+		return res.status(400).json({
+			error: 'Invalid tableName',
+		});
+	}
+	const v_tid = req.tid as string;
+
+	const positionalValues: any[] = [v_lastUpdated, v_tid];
+	const params = constants.table_query_params[v_tableName as TableName];
+	for (const param of params) positionalValues.push(req.query[param] ?? null);
+	const argCount = 2 + params.length;
+	const placeholders = Array.from(
+		{ length: positionalValues.length },
+		() => '?',
+	).join(', ');
+	const sql = `SELECT * FROM get_${v_tableName}(${placeholders})`;
+	try {
+		const result = await dbConnection.raw(sql, positionalValues);
+		res.status(200).json(result.rows);
+	} catch (error: any) {
+		console.error(`❌ LoadData error:`, error);
+		res
+			.status(500)
+			.json({ message: 'LoadData request failed', error: error.message });
+	}
+	return;
 });
 
 
@@ -223,8 +218,8 @@ router.get("/events", async (req: any, res) => {
           const { table, action, data } =process.env.NODE_ENV !== 'development' ?   JSON.parse(JSON.parse(msg.payload)): JSON.parse(msg.payload);
           const dataTenantID = data[PortalInfo?.TenantColumnName ?? ""] || data.TenantID;
           
-///TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
-        var result=  await db.raw("SELECT EntityName FROM tblEntities WHERE entityid = ?", [dataTenantID]).mtdd()
+        ///TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
+        var result=  await db.raw("SELECT EntityName FROM tblEntities WHERE entityid = ?", [dataTenantID]).mtdd();
           // Get Redis keys based on Foreign Key (e.g., VendorID)
       const vendorId = data.tenantid; // Adjust based on your schema
 
