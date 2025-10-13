@@ -117,9 +117,10 @@ router.get('/mtdd/Load', async (req: any, res: Response) => {
 	console.log('v_tableName:', v_tableName, 'v_lastUpdated:', v_lastUpdated);
 	if (!Object.hasOwn(constants.table_query_params, v_tableName)) {
 		console.warn(`Invalid tableName: ${v_tableName}`);
-		return res.status(400).json({
+		 res.status(400).json({
 			error: 'Invalid tableName',
 		});
+    return;
 	}
 	const v_tid = req.tid as string;
 
@@ -163,9 +164,10 @@ router.get("/events", async (req: any, res) => {
       
       // Validate authorization
       if (!authToken || !authToken.startsWith("Bearer ")) {
-        return res.status(422).json({
+         res.status(422).json({
           message: 'Authorization required for events endpoint'
         });
+        return;
       }
 
       // Extract and decode token
@@ -173,9 +175,10 @@ router.get("/events", async (req: any, res) => {
        const decoded: any = await decodeAccessToken(req);
       
       if (!decoded.IsSuccess) {
-        return res.status(401).json({
+         res.status(401).json({
           message: 'Invalid token for events endpoint'
         });
+        return;
       }
 
       // Extract auth values like in main middleware
@@ -188,9 +191,10 @@ router.get("/events", async (req: any, res) => {
 
     } catch (authError: any) {
       console.error('❌ Events endpoint authentication failed:', authError.message);
-      return res.status(401).json({
+       res.status(401).json({
         message: 'Authentication failed for events endpoint'
       });
+      return;
     }
 
     // Continue with existing events logic
@@ -219,7 +223,7 @@ router.get("/events", async (req: any, res) => {
           const dataTenantID = data[PortalInfo?.TenantColumnName ?? ""] || data.TenantID;
           
         ///TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
-        var result=  await db.raw("SELECT EntityName FROM tblEntities WHERE entityid = ?", [dataTenantID]).mtdd();
+        var result=  await db.raw("SELECT EntityName FROM tblEntities WHERE entityid = ?", [dataTenantID]);
           // Get Redis keys based on Foreign Key (e.g., VendorID)
       const vendorId = data.tenantid; // Adjust based on your schema
 
