@@ -106,7 +106,7 @@ class UpdatePayload {
 //     res.json(response);
 // });
 
-router.get('/mtdd/Load', async (req: any, res: Response) => {
+router.get('/Load', async (req: any, res: Response) => {
 	const v_tableName = req.query.tableName;
 	const v_lastUpdated = Number(req.query.lastUpdated);
 	if (isNaN(v_lastUpdated))
