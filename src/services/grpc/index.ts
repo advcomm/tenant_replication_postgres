@@ -4,20 +4,21 @@
  * Central export point for all gRPC-related functions and clients
  */
 
-export { parseResponse, convertBigIntToString } from './utils';
-export {
-  backendServers,
-  IS_SINGLE_SERVER_DEPLOYMENT,
-  createGrpcConnectionOptions,
-  createGrpcCredentials,
-} from './config';
+export { listenToChannel } from './channelListener';
 export { clients, lookupClient } from './clientSetup';
 export {
-  callAllServersRace,
-  callAllServersAny,
-  callAllServersAll,
-  callSpecificServer,
-  callSpecificServerByShard,
+  IS_SINGLE_SERVER_DEPLOYMENT, backendServers, createGrpcConnectionOptions,
+  createGrpcCredentials
+} from './config';
+export { addTenantShard, getTenantShard } from './lookupService';
+export {
+  convertQuestionMarksToPositional, hasNamedParameters,
+  hasQuestionMarkParameters, processNamedParameters,
+  processQueryParameters
+} from './queryUtils';
+export {
+  callAllServersAll, callAllServersAny, callAllServersRace, callSpecificServer,
+  callSpecificServerByShard
 } from './serverCalls';
-export { getTenantShard, addTenantShard } from './lookupService';
+export { convertBigIntToString, parseResponse } from './utils';
 
