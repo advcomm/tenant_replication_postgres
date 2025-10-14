@@ -4,8 +4,8 @@
  * Automatic gRPC routing for multi-tenant database operations
  */
 
-import type { MtddMeta, SqlResult } from '../types/mtdd';
-import { BackendClient } from '../services/grpcClient';
+import type { MtddMeta, SqlResult } from '../../types/mtdd';
+import { BackendClient } from '../../services/grpcClient';
 
 /**
  * Automatic gRPC MTDD Handler

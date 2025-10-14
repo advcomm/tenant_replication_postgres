@@ -6,7 +6,7 @@
  */
 
 import type { Knex } from 'knex';
-import type { MtddMeta } from '../types/mtdd';
+import type { MtddMeta } from '../../types/mtdd';
 
 /**
  * Development MTDD Stubs - No-op implementation for development environment
