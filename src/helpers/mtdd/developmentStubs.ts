@@ -7,14 +7,14 @@
 
 import type { Knex } from 'knex';
 import type { MtddMeta } from '../../types/mtdd';
+import { mtddLogger } from '../../utils/logger';
 
 /**
  * Development MTDD Stubs - No-op implementation for development environment
  * This allows .mtdd() calls to work without any actual MTDD routing logic
  */
 export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
-  console.log('🛠️ [DEVELOPMENT] Setting up MTDD no-op stubs for development environment');
-  console.log('🛠️ [DEVELOPMENT] NODE_ENV:', process.env.NODE_ENV);
+  mtddLogger.info({ env: process.env.NODE_ENV }, 'Setting up MTDD no-op stubs for development environment');
 
   try {
     // PATCH QueryBuilder for development - using the knex instance to get the right prototypes
@@ -37,15 +37,16 @@ export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
           isDevelopmentStub: true,
         };
 
-        console.log(
-          `🛠️ [DEV-STUB] QueryBuilder.mtdd() called with tenantId: ${this._mtddMeta.tenantId} - no-op in development`,
+        mtddLogger.debug(
+          { tenantId: this._mtddMeta.tenantId },
+          'QueryBuilder.mtdd() stub called - no-op in development',
         );
 
         // Return this for chaining - no special logic
         return this;
       };
 
-      console.log('✅ [DEVELOPMENT] QueryBuilder.mtdd() stub enabled');
+      mtddLogger.debug('QueryBuilder.mtdd() stub enabled');
     }
 
     // PATCH Raw queries for development - using the knex instance to get the right Raw constructor
@@ -68,21 +69,21 @@ export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
           isDevelopmentStub: true,
         };
 
-        console.log(
-          `🛠️ [DEV-STUB] Raw.mtdd() called with tenantId: ${this._mtddMeta.tenantId} - no-op in development`,
+        mtddLogger.debug(
+          { tenantId: this._mtddMeta.tenantId },
+          'Raw.mtdd() stub called - no-op in development',
         );
 
         // Return this for chaining - no special logic
         return this;
       };
 
-      console.log('✅ [DEVELOPMENT] Raw.mtdd() stub enabled');
+      mtddLogger.debug('Raw.mtdd() stub enabled');
     }
 
-    console.log('✅ [DEVELOPMENT] MTDD development stubs enabled successfully');
-    console.log('🔄 [DEVELOPMENT] All .mtdd() calls will be no-ops and use standard Knex behavior');
+    mtddLogger.info('MTDD development stubs enabled successfully - all .mtdd() calls will be no-ops');
   } catch (error) {
-    console.error('❌ [DEVELOPMENT] Error enabling MTDD development stubs:', error);
+    mtddLogger.error({ error }, 'Error enabling MTDD development stubs');
     throw error;
   }
 }

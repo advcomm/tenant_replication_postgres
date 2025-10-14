@@ -20,6 +20,7 @@ import {
   lookupClient,
   processQueryParameters,
 } from './grpc';
+import { grpcLogger } from '../utils/logger';
 
 /**
  * Main Backend Client Class
@@ -36,7 +37,7 @@ export class BackendClient {
     isFunction: boolean = false,
     tenantId?: string,
   ): Promise<unknown> {
-    console.warn('⚠️ callProcedure is deprecated. Use executeQuery instead.');
+    grpcLogger.warn('callProcedure is deprecated. Use executeQuery instead.');
     const convertedParams = convertBigIntToString(params) as unknown[];
 
     const request: any = {
@@ -47,19 +48,20 @@ export class BackendClient {
 
     try {
       if (tenantId !== undefined && tenantId !== null) {
-        console.log(`🔍 Looking up shard for tenant ${tenantId} (procedure: ${procedureName})`);
+        grpcLogger.debug({ tenantId, procedure: procedureName }, 'Looking up shard for tenant');
         const shardId = await getTenantShard(lookupClient, tenantId, 1);
 
-        console.log(
-          `📡 Calling procedure ${procedureName} on shard ${shardId} (TenantID: ${tenantId})`,
+        grpcLogger.debug(
+          { procedure: procedureName, shardId, tenantId },
+          'Calling procedure on specific shard',
         );
         return await callSpecificServerByShard(clients, shardId, request);
       }
-      console.log(`📡 Calling procedure ${procedureName} on all servers concurrently`);
+      grpcLogger.debug({ procedure: procedureName }, 'Calling procedure on all servers concurrently');
       return await callAllServersAny(clients, request);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Backend client error for procedure ${procedureName}:`, errorMessage);
+      grpcLogger.error({ procedure: procedureName, error: errorMessage }, 'Backend client error for procedure');
       throw error;
     }
   }
@@ -74,8 +76,9 @@ export class BackendClient {
   ): Promise<unknown> {
     // Single server deployment optimization
     if (IS_SINGLE_SERVER_DEPLOYMENT) {
-      console.log(
-        `🎯 [SINGLE-SERVER] Simplified routing - executing on single server (${backendServers[0]})`,
+      grpcLogger.debug(
+        { server: backendServers[0] },
+        'Simplified routing - executing on single server',
       );
 
       const { query: processedQuery, params } = processQueryParameters(
@@ -91,25 +94,25 @@ export class BackendClient {
       };
 
       try {
-        console.log(`📡 [SINGLE-SERVER] Executing query directly on ${backendServers[0]}`);
+        grpcLogger.debug({ server: backendServers[0] }, 'Executing query directly on single server');
         const selectedClient = clients[0];
 
         return new Promise((resolve, reject) => {
           selectedClient.executeQuery(request, (error: unknown, response: unknown) => {
             if (error) {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-              console.error(`❌ [SINGLE-SERVER] Query execution failed:`, errorMessage);
+              grpcLogger.error({ error: errorMessage }, 'Single server query execution failed');
               reject(error);
             } else {
               const parsedResponse = response;
-              console.log(`✅ [SINGLE-SERVER] Query executed successfully`);
+              grpcLogger.debug('Single server query executed successfully');
               resolve(parsedResponse);
             }
           });
         });
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`❌ [SINGLE-SERVER] Query execution failed:`, errorMessage);
+        grpcLogger.error({ error: errorMessage }, 'Single server query execution failed');
         throw error;
       }
     }
@@ -129,17 +132,17 @@ export class BackendClient {
 
     try {
       if (tenantName !== undefined && tenantName !== null) {
-        console.log(`🔍 Looking up shard for tenant ${tenantName}`);
+        grpcLogger.debug({ tenantName }, 'Looking up shard for tenant');
         const shardId = await getTenantShard(lookupClient, tenantName, 1);
 
-        console.log(`📡 Executing query on shard ${shardId} (tenantName: ${tenantName})`);
+        grpcLogger.debug({ shardId, tenantName }, 'Executing query on specific shard');
         return await callSpecificServerByShard(clients, shardId, request);
       }
-      console.log(`📡 Executing query on all servers concurrently`);
+      grpcLogger.debug('Executing query on all servers concurrently');
       return await callAllServersAny(clients, request);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Backend client error for query execution:`, errorMessage);
+      grpcLogger.error({ error: errorMessage }, 'Backend client error for query execution');
       throw error;
     }
   }
@@ -164,11 +167,11 @@ export class BackendClient {
     };
 
     try {
-      console.log(`📡 Executing query on all servers using Promise.race`);
+      grpcLogger.debug('Executing query on all servers using Promise.race');
       return await callAllServersRace(clients, request);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Backend client error for race query execution:`, errorMessage);
+      grpcLogger.error({ error: errorMessage }, 'Backend client error for race query execution');
       throw error;
     }
   }
@@ -193,11 +196,11 @@ export class BackendClient {
     };
 
     try {
-      console.log(`📡 Executing query on all servers using Promise.any`);
+      grpcLogger.debug('Executing query on all servers using Promise.any');
       return await callAllServersAny(clients, request);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Backend client error for any query execution:`, errorMessage);
+      grpcLogger.error({ error: errorMessage }, 'Backend client error for any query execution');
       throw error;
     }
   }
@@ -211,8 +214,9 @@ export class BackendClient {
   ): Promise<unknown[]> {
     // Single server deployment optimization - return single result in array format
     if (IS_SINGLE_SERVER_DEPLOYMENT) {
-      console.log(
-        `🎯 [SINGLE-SERVER] executeQueryAll - using single server result (${backendServers[0]})`,
+      grpcLogger.debug(
+        { server: backendServers[0] },
+        'executeQueryAll - using single server result',
       );
       const singleResult = await this.executeQuery(query, valuesOrBindings);
       return [singleResult];
@@ -232,11 +236,11 @@ export class BackendClient {
     };
 
     try {
-      console.log(`📡 Executing query on all servers using Promise.all`);
+      grpcLogger.debug('Executing query on all servers using Promise.all');
       return await callAllServersAll(clients, request);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Backend client error for all query execution:`, errorMessage);
+      grpcLogger.error({ error: errorMessage }, 'Backend client error for all query execution');
       throw error;
     }
   }
@@ -279,11 +283,11 @@ export class BackendClient {
     });
 
     try {
-      console.log(`📡 Executing query on all servers using Promise.allSettled`);
+      grpcLogger.debug('Executing query on all servers using Promise.allSettled');
       return await Promise.allSettled(promises);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Backend client error for allSettled query execution:`, errorMessage);
+      grpcLogger.error({ error: errorMessage }, 'Backend client error for allSettled query execution');
       throw error;
     }
   }
@@ -313,6 +317,6 @@ export class BackendClient {
    * Initialize the backend client
    */
   static initialize(config: unknown): void {
-    console.log('📡 Backend gRPC client initialized with servers:', backendServers);
+    grpcLogger.info({ servers: backendServers }, 'Backend gRPC client initialized');
   }
 }

@@ -6,6 +6,7 @@
 
 import type { MtddMeta, SqlResult } from '../../types/mtdd';
 import { BackendClient } from '../../services/grpcClient';
+import { mtddLogger } from '../../utils/logger';
 
 /**
  * Automatic gRPC MTDD Handler
@@ -16,20 +17,19 @@ export async function grpcMtddHandler(
   queryObject: unknown,
   sqlResult: SqlResult,
 ): Promise<unknown> {
-  console.log('🚀 [GRPC-MTDD] Processing query via gRPC backend');
+  mtddLogger.debug('Processing query via gRPC backend');
 
   // Single server deployment detection
   const serverList = process.env.BACKEND_SERVERS?.split(',') || ['192.168.0.87', '192.168.0.2'];
   const isSingleServer = serverList.length === 1;
 
   if (isSingleServer) {
-    console.log(
-      '🎯 [SINGLE-SERVER] Single server deployment detected - using simplified gRPC routing',
+    mtddLogger.info(
+      { server: serverList[0] },
+      'Single server deployment detected - using simplified routing',
     );
-    console.log(`📡 [SINGLE-SERVER] Routing to single gRPC server: ${serverList[0]}`);
 
-    console.log(`📄 [SINGLE-SERVER] SQL Query:`, sqlResult.sql);
-    console.log(`📝 [SINGLE-SERVER] Bindings:`, sqlResult.bindings);
+    mtddLogger.debug({ sql: sqlResult.sql, bindings: sqlResult.bindings }, 'Single server query');
 
     try {
       // For single server, determine if tenant-specific or all-server execution
@@ -38,10 +38,10 @@ export async function grpcMtddHandler(
 
       let result;
       if (executeOnAllServers) {
-        console.log(`🌐 [SINGLE-SERVER] Executing on single server (acting as "all servers")`);
+        mtddLogger.debug('Executing on single server (acting as "all servers")');
         result = await BackendClient.executeQueryAll(sqlResult.sql, sqlResult.bindings || []);
       } else {
-        console.log(`🏢 [SINGLE-SERVER] Executing tenant-specific query on single server`);
+        mtddLogger.debug({ tenantName }, 'Executing tenant-specific query on single server');
         const tenantNameStr = typeof tenantName === 'string' ? tenantName : String(tenantName);
         result = await BackendClient.executeQuery(
           sqlResult.sql,
@@ -50,11 +50,11 @@ export async function grpcMtddHandler(
         );
       }
 
-      console.log('✅ [SINGLE-SERVER] gRPC query executed successfully');
+      mtddLogger.debug('Single server gRPC query executed successfully');
       return result;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('❌ [SINGLE-SERVER] gRPC query execution failed:', errorMessage);
+      mtddLogger.error({ error: errorMessage }, 'Single server gRPC query execution failed');
       throw error;
     }
   }
@@ -65,17 +65,19 @@ export async function grpcMtddHandler(
   const executeOnAllServers = meta.allServers === true || !tenantName;
 
   if (executeOnAllServers) {
-    console.log('⚠️  [GRPC-MTDD] Executing on all servers (chain end execution)');
+    mtddLogger.debug('Executing on all servers (chain end execution)');
   } else {
-    console.log(`🏢 [GRPC-MTDD] Tenant identified: ${tenantNameStr} - routing to specific shard`);
+    mtddLogger.debug({ tenant: tenantNameStr }, 'Routing to specific tenant shard');
   }
 
   try {
-    console.log(`📊 [GRPC-MTDD] SQL Query:`, sqlResult.sql);
-    console.log(`🔗 [GRPC-MTDD] Bindings:`, sqlResult.bindings);
-    console.log(
-      `🎯 [GRPC-MTDD] Target:`,
-      executeOnAllServers ? 'All Servers (Chain End)' : `Tenant Shard for ${tenantNameStr}`,
+    mtddLogger.debug(
+      {
+        sql: sqlResult.sql,
+        bindings: sqlResult.bindings,
+        target: executeOnAllServers ? 'All Servers' : `Tenant ${tenantNameStr}`,
+      },
+      'MTDD query routing',
     );
 
     // Check the methodType and tenantType to determine action
@@ -102,24 +104,26 @@ export async function grpcMtddHandler(
       }
 
       if (shouldAddTenantShard) {
-        console.log(`🆕 [GRPC-MTDD] Add tenant operation detected - adding tenant shard first`);
+        mtddLogger.debug({ tenant: tenantNameStr }, 'Add tenant operation detected - adding tenant shard first');
         try {
           // Add tenant shard mapping first
           await BackendClient.addTenantShard(tenantNameStr, tenantTypeToUse);
-          console.log(
-            `✅ [GRPC-MTDD] Tenant shard mapping added for ${tenantNameStr} with type ${tenantTypeToUse}`,
+          mtddLogger.info(
+            { tenant: tenantNameStr, tenantType: tenantTypeToUse },
+            'Tenant shard mapping added',
           );
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.warn(
-            `⚠️  [GRPC-MTDD] Could not add tenant shard (may already exist): ${errorMessage}`,
+          mtddLogger.warn(
+            { tenant: tenantNameStr, error: errorMessage },
+            'Could not add tenant shard (may already exist)',
           );
           // Continue with query execution even if tenant shard addition fails
         }
       }
 
       // Execute query on specific shard for the tenant
-      console.log(`📡 [GRPC-MTDD] Executing query on specific shard for tenant: ${tenantNameStr}`);
+      mtddLogger.debug({ tenant: tenantNameStr }, 'Executing query on specific shard');
       result = await BackendClient.executeQuery(
         sqlResult.sql,
         sqlResult.bindings || [],
@@ -127,19 +131,18 @@ export async function grpcMtddHandler(
       );
     } else {
       // Execute query on all servers when no tenant specified or allServers flag is set
-      console.log(`📡 [GRPC-MTDD] Executing query on all servers (chain end execution)`);
+      mtddLogger.debug('Executing query on all servers (chain end execution)');
       result = await BackendClient.executeQueryAll(sqlResult.sql, sqlResult.bindings || []);
     }
 
-    console.log('✅ [GRPC-MTDD] Query executed successfully via gRPC');
-    console.log(
-      '📦 [GRPC-MTDD] Result preview:',
-      Array.isArray(result) ? `${result.length} rows` : 'Non-array result',
+    mtddLogger.debug(
+      { resultType: Array.isArray(result) ? `${result.length} rows` : 'Non-array result' },
+      'Query executed successfully via gRPC',
     );
 
     return result;
   } catch (error) {
-    console.error('❌ [GRPC-MTDD] Error executing query via gRPC:', (error as Error).message);
+    mtddLogger.error({ error: (error as Error).message }, 'Error executing query via gRPC');
     throw error;
   }
 }

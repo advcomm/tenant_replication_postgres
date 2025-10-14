@@ -8,6 +8,7 @@ import type { Knex } from 'knex';
 import type { MtddMeta, SqlResult } from '../../types/mtdd';
 import { createMtddMethodWrapper, createReRunMethodWrapper } from './methodWrappers';
 import { grpcMtddHandler } from './grpcHandler';
+import { mtddLogger } from '../../utils/logger';
 
 // Global custom MTDD handler - can be set by users
 let customMtddHandler: ((meta: MtddMeta, queryObject: unknown, sqlResult: SqlResult) => void) | null =
@@ -23,29 +24,25 @@ export function enableMtddRouting(knexInstance: Knex): void {
   const isSingleServer = serverList.length === 1;
 
   if (isSingleServer) {
-    console.log(
-      `🎯 [SINGLE-SERVER] Single server deployment detected (${serverList[0]}) - simplified gRPC routing enabled`,
+    mtddLogger.info(
+      { server: serverList[0] },
+      'Single server deployment detected - simplified gRPC routing enabled',
     );
-    console.log(
-      `🎯 [SINGLE-SERVER] All queries will route through gRPC to single server without complex MTDD overhead`,
-    );
-    console.log(
-      `🎯 [SINGLE-SERVER] IsReRun flags, chain-end detection, and shard routing are simplified`,
-    );
+    mtddLogger.debug('All queries will route through gRPC to single server without complex MTDD overhead');
+    mtddLogger.debug('IsReRun flags, chain-end detection, and shard routing are simplified');
 
     // Set flag to use simplified gRPC routing in the MTDD handler
     process.env.MTDD_SINGLE_SERVER_MODE = 'true';
     process.env.MTDD_SINGLE_SERVER_TARGET = serverList[0];
 
-    console.log(
-      `✅ [SINGLE-SERVER] Single-server mode enabled - will use simplified gRPC routing to ${serverList[0]}`,
-    );
+    mtddLogger.info({ server: serverList[0] }, 'Single-server mode enabled');
     // Continue with normal MTDD setup but the grpcMtddHandler will use simplified routing
   }
 
   // Multi-server MTDD routing (existing complex logic)
-  console.log(
-    `🏗️  [MULTI-SERVER] Multi-server deployment detected (${serverList.length} servers) - full MTDD routing enabled`,
+  mtddLogger.info(
+    { serverCount: serverList.length },
+    'Multi-server deployment detected - full MTDD routing enabled',
   );
 
   try {
@@ -57,50 +54,57 @@ export function enableMtddRouting(knexInstance: Knex): void {
 
       // Only perform actions if toSQL was auto-appended (not manually called)
       if (!mtddMeta.toSQLAppended) {
-        console.log('⏭️  Skipping MTDD actions - toSQL() was manually called');
+        mtddLogger.debug('Skipping MTDD actions - toSQL() was manually called');
         return [];
       }
 
       const queryType = queryObject.sql ? 'RAW query' : 'operation';
-      console.log(
-        `🔄 Auto-appending toSQL() at chain end for ${queryType}: ${mtddMeta?.operation || 'unknown'}`,
+      mtddLogger.debug(
+        { queryType, operation: mtddMeta?.operation || 'unknown' },
+        'Auto-appending toSQL() at chain end',
       );
-      console.log(`📊 MTDD Metadata:`, JSON.stringify(mtddMeta, null, 2));
+      mtddLogger.debug({ mtddMeta }, 'MTDD Metadata');
 
       // Perform special MTDD actions based on metadata
       if (mtddMeta.IsReRun) {
-        console.log(`🔁 Re-run detected - applying special handling for complex query`);
+        mtddLogger.debug('Re-run detected - applying special handling for complex query');
 
         // Handle having conditions if present
         if (mtddMeta.havingConditions && mtddMeta.havingConditions.length > 0) {
-          console.log(
-            `📋 Having conditions detected (${mtddMeta.havingConditions.length}):`,
-            mtddMeta.havingConditions.map((c) => `${c.method}(${c.args.join(', ')})`).join(', '),
+          mtddLogger.debug(
+            {
+              count: mtddMeta.havingConditions.length,
+              conditions: mtddMeta.havingConditions.map((c) => `${c.method}(${c.args.join(', ')})`).join(', '),
+              complexity: mtddMeta.havingSummary?.complexity || 'unknown',
+            },
+            'Having conditions detected',
           );
-          console.log(`🔍 Complexity level: ${mtddMeta.havingSummary?.complexity || 'unknown'}`);
         }
       }
 
       // Handle caching logic - ONLY when auto-appended
       if (mtddMeta.cacheKey && !mtddMeta.skipCache) {
-        console.log(
-          `💾 [AUTO-APPEND] Cache key: ${mtddMeta.cacheKey}, TTL: ${mtddMeta.cacheTTL || 'default'}`,
+        mtddLogger.debug(
+          { cacheKey: mtddMeta.cacheKey, ttl: mtddMeta.cacheTTL || 'default' },
+          'Cache configuration',
         );
         // Your custom caching logic here
       }
 
       // Handle tenant routing - ONLY when auto-appended
       if (mtddMeta.tenantId) {
-        console.log(
-          `🏢 [AUTO-APPEND] Tenant routing: ${mtddMeta.tenantId} (${mtddMeta.operationType || 'unknown'} operation)`,
+        mtddLogger.debug(
+          { tenantId: mtddMeta.tenantId, operationType: mtddMeta.operationType || 'unknown' },
+          'Tenant routing',
         );
         // Your custom tenant routing logic here
       }
 
       // Handle audit logging - ONLY when auto-appended
       if (mtddMeta.auditLog) {
-        console.log(
-          `📝 [AUTO-APPEND] Audit logging enabled for user: ${mtddMeta.userId || 'unknown'}, session: ${mtddMeta.sessionId || 'none'}`,
+        mtddLogger.debug(
+          { userId: mtddMeta.userId || 'unknown', sessionId: mtddMeta.sessionId || 'none' },
+          'Audit logging enabled',
         );
         // Your custom audit logging logic here
       }
@@ -110,49 +114,49 @@ export function enableMtddRouting(knexInstance: Knex): void {
         const indexes = Array.isArray(mtddMeta.useIndex)
           ? mtddMeta.useIndex.join(', ')
           : mtddMeta.useIndex;
-        console.log(`⚡ [AUTO-APPEND] Performance hint - use indexes: ${indexes}`);
+        mtddLogger.debug({ indexes }, 'Performance hint - use indexes');
         // Your custom index optimization logic here
       }
 
       if (mtddMeta.timeout) {
-        console.log(`⏱️  [AUTO-APPEND] Query timeout set to: ${mtddMeta.timeout}ms`);
+        mtddLogger.debug({ timeout: mtddMeta.timeout }, 'Query timeout set');
         // Your custom timeout handling logic here
       }
 
       // Handle connection pooling - ONLY when auto-appended
       if (mtddMeta.connectionPool) {
-        console.log(`🏊 [AUTO-APPEND] Using connection pool: ${mtddMeta.connectionPool}`);
+        mtddLogger.debug({ connectionPool: mtddMeta.connectionPool }, 'Using connection pool');
         // Your custom connection pool routing logic here
       }
 
       // Handle transaction management - ONLY when auto-appended
       if (mtddMeta.transactionId) {
-        console.log(`🔒 [AUTO-APPEND] Transaction context: ${mtddMeta.transactionId}`);
+        mtddLogger.debug({ transactionId: mtddMeta.transactionId }, 'Transaction context');
         if (mtddMeta.isolationLevel) {
-          console.log(`🛡️  [AUTO-APPEND] Isolation level: ${mtddMeta.isolationLevel}`);
+          mtddLogger.debug({ isolationLevel: mtddMeta.isolationLevel }, 'Isolation level');
         }
         // Your custom transaction handling logic here
       }
 
       // Execute query via gRPC backend
       try {
-        console.log('🎯 [AUTO-APPEND] Executing query via gRPC backend');
+        mtddLogger.debug('Executing query via gRPC backend');
         const result = await grpcMtddHandler(mtddMeta, queryObject, sqlResult);
 
         // Call custom handler if provided (after gRPC execution)
         if (typeof customMtddHandler === 'function') {
           try {
-            console.log('🎯 [AUTO-APPEND] Calling additional custom MTDD handler');
+            mtddLogger.debug('Calling additional custom MTDD handler');
             customMtddHandler(mtddMeta, queryObject, sqlResult);
           } catch (error) {
-            console.error('❌ Error in custom MTDD handler:', error);
+            mtddLogger.error({ error }, 'Error in custom MTDD handler');
           }
         }
 
-        console.log('✅ [AUTO-APPEND] MTDD actions completed - query executed via gRPC');
+        mtddLogger.debug('MTDD actions completed - query executed via gRPC');
         return result;
       } catch (error) {
-        console.error('❌ [AUTO-APPEND] Error in gRPC execution:', (error as Error).message);
+        mtddLogger.error({ error: (error as Error).message }, 'Error in gRPC execution');
         throw error;
       }
     };
@@ -180,10 +184,7 @@ export function enableMtddRouting(knexInstance: Knex): void {
                     const result = await performMtddAutoActions(queryObject, sqlResult);
                     return result;
                   } catch (error) {
-                    console.error(
-                      '🚫 [GRPC-MTDD] Query execution failed:',
-                      (error as Error).message,
-                    );
+                    mtddLogger.error({ error: (error as Error).message }, 'Query execution failed');
                     throw error;
                   }
                 };
@@ -226,7 +227,7 @@ export function enableMtddRouting(knexInstance: Knex): void {
                       try {
                         endArgs[0]();
                       } catch (error) {
-                        console.warn('Error in finally callback:', error);
+                        mtddLogger.warn({ error }, 'Error in finally callback');
                       }
                     }
                   });
@@ -262,8 +263,8 @@ export function enableMtddRouting(knexInstance: Knex): void {
 
             // If no MTDD metadata or toSQL already called, but still has MTDD metadata
             if (queryObject._mtddMeta) {
-              console.log(
-                '🚫 [GRPC-MTDD] MTDD query without auto-append detected - returning empty result',
+              mtddLogger.debug(
+                'MTDD query without auto-append detected - returning empty result',
               );
 
               if (endMethod === 'then' && endArgs[0] && typeof endArgs[0] === 'function') {
@@ -394,11 +395,12 @@ export function enableMtddRouting(knexInstance: Knex): void {
           // Only perform special MTDD actions if toSQL was manually called by user
           // When manually called, we preserve normal Knex behavior
           if (!this._mtddMeta.toSQLAppended) {
-            console.log(
-              `🔧 Manual toSQL() call detected for operation: ${this._mtddMeta?.operation || 'unknown'}`,
+            mtddLogger.debug(
+              { operation: this._mtddMeta?.operation || 'unknown' },
+              'Manual toSQL() call detected',
             );
-            console.log(
-              `↩️  Preserving normal Knex behavior - no special MTDD actions, no database execution`,
+            mtddLogger.debug(
+              'Preserving normal Knex behavior - no special MTDD actions, no database execution',
             );
           }
         }
@@ -652,10 +654,11 @@ export function enableMtddRouting(knexInstance: Knex): void {
         return this;
       };
 
-      console.log(
-        `QueryBuilder methods patched for MTDD routing: ${Object.keys(pgClientMethods).length} methods`,
+      mtddLogger.info(
+        { methodCount: Object.keys(pgClientMethods).length },
+        'QueryBuilder methods patched for MTDD routing',
       );
-      console.log(`Re-run methods (auto-set IsReRun=true): ${Array.from(reRunMethods).join(', ')}`);
+      mtddLogger.debug({ reRunMethods: Array.from(reRunMethods).join(', ') }, 'Re-run methods configured');
     }
 
     // PATCH Raw queries for comprehensive MTDD support
@@ -742,11 +745,12 @@ export function enableMtddRouting(knexInstance: Knex): void {
             // Mark as manually called by user and preserve normal Knex behavior
             if (result.options?.mtdd) {
               result.options.mtdd.toSQLAppended = false;
-              console.log(
-                `🔧 Manual toSQL() call detected for RAW query: ${this._mtddMeta?.operation || 'unknown'}`,
+              mtddLogger.debug(
+                { operation: this._mtddMeta?.operation || 'unknown' },
+                'Manual toSQL() call detected for RAW query',
               );
-              console.log(
-                `↩️  Preserving normal Knex behavior - no special MTDD actions, no database execution`,
+              mtddLogger.debug(
+                'Preserving normal Knex behavior - no special MTDD actions, no database execution',
               );
             }
 
@@ -779,25 +783,26 @@ export function enableMtddRouting(knexInstance: Knex): void {
           // Only perform special MTDD actions if toSQL was manually called by user
           // When manually called, we preserve normal Knex behavior
           if (!this._mtddMeta.toSQLAppended) {
-            console.log(
-              `🔧 Manual toSQL() call detected for RAW query: ${this._mtddMeta?.operation || 'unknown'}`,
+            mtddLogger.debug(
+              { operation: this._mtddMeta?.operation || 'unknown' },
+              'Manual toSQL() call detected for RAW query',
             );
-            console.log(
-              `↩️  Preserving normal Knex behavior - no special MTDD actions, no database execution`,
+            mtddLogger.debug(
+              'Preserving normal Knex behavior - no special MTDD actions, no database execution',
             );
           }
         }
         return result;
       };
 
-      console.log('Raw queries patched for MTDD routing');
+      mtddLogger.info('Raw queries patched for MTDD routing');
     }
 
-    console.log(
+    mtddLogger.info(
       'MTDD routing enabled successfully - All PostgreSQL client methods are now MTDD-aware',
     );
   } catch (error) {
-    console.error('Error enabling MTDD routing:', error);
+    mtddLogger.error({ error }, 'Error enabling MTDD routing');
     throw error;
   }
 }

@@ -7,6 +7,7 @@ import type { AuthenticatedRequest, ChannelMessage } from '../types/api';
 import ActiveClients from '../helpers/activeClients';
 import { db as knexHelperDb } from '../helpers/knexHelper';
 import { BackendClient } from '../services/grpcClient';
+import { apiLogger, notificationLogger } from '../utils/logger';
 
 const PortalInfo = JSON.parse(process.env.PortalInfo || '{}')!;
 
@@ -16,11 +17,11 @@ export function createCoreRoutes(dbConnection: Knex): Router {
     dbConnection === knexHelperDb
       ? dbConnection
       : (() => {
-          console.warn(
-            '⚠️ Warning: Provided dbConnection is not the same as knexHelper db instance. MTDD functionality may not be available.',
+          apiLogger.warn(
+            'Provided dbConnection is not the same as knexHelper db instance. MTDD functionality may not be available.',
           );
-          console.warn(
-            '� Tip: Use the db instance from knexHelper to ensure MTDD functionality works correctly.',
+          apiLogger.warn(
+            'Tip: Use the db instance from knexHelper to ensure MTDD functionality works correctly.',
           );
           return dbConnection;
         })();
@@ -121,8 +122,9 @@ export function createCoreRoutes(dbConnection: Knex): Router {
     try {
       const { tableName, lastUpdated } = req.query;
       const deviceId = (req.query?.deviceId || req.headers?.deviceid) as string;
-      console.log(
-        `📊 LoadData -  Table: ${tableName}, User: ${sub}, TenantID: ${TenantID}, Roles: ${roles.join(', ')}, LastUpdated: ${lastUpdated}`,
+      apiLogger.info(
+        { tableName, user: sub, tenantId: TenantID, roles, lastUpdated },
+        'LoadData request',
       );
 
       // Validate required parameters
@@ -143,12 +145,12 @@ export function createCoreRoutes(dbConnection: Knex): Router {
         .raw(`SELECT * FROM get_${tableName}(?, ?)`, [lastUpdatedParam, TenantID])
         .mtdd();
 
-      console.log(`📊 LoadData - Result:`, result);
+      apiLogger.debug({ result }, 'LoadData result');
 
       res.status(200).json(result.rows);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ LoadData error:`, errorMessage);
+      apiLogger.error({ error: errorMessage }, 'LoadData error');
       res.status(500).json({ message: 'LoadData request failed', error: errorMessage });
     }
     return;
@@ -166,7 +168,7 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 
         // Add authorization to headers for processing
         req.headers['authorization'] = authToken;
-        console.log(`🔓 Using authorization from query parameter for events endpoint`);
+        apiLogger.debug('Using authorization from query parameter for events endpoint');
       }
 
       // Validate authorization
@@ -195,12 +197,13 @@ export function createCoreRoutes(dbConnection: Knex): Router {
       req.tid = tid;
       req.roles = roles;
 
-      console.log(
-        `✅ Events endpoint authorized - User: ${sub}, TenantID: ${tid}, Roles: ${roles.join(', ')}`,
+      apiLogger.info(
+        { user: sub, tenantId: tid, roles },
+        'Events endpoint authorized',
       );
     } catch (authError: unknown) {
       const errorMessage = authError instanceof Error ? authError.message : 'Unknown error';
-      console.error('❌ Events endpoint authentication failed:', errorMessage);
+      apiLogger.error({ error: errorMessage }, 'Events endpoint authentication failed');
       return res.status(401).json({
         message: 'Authentication failed for events endpoint',
       });
@@ -217,11 +220,14 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 
     ActiveClients.AddWebDeviceEvent(deviceId, 'events', res);
 
-    console.log(`✅ Device registered: ${deviceId} for user: ${req.sub} (TenantID: ${req.tid})`);
+    notificationLogger.info(
+      { deviceId, user: req.sub, tenantId: req.tid },
+      'Device registered for events',
+    );
 
     req.on('close', () => {
       ActiveClients.DeleteWebDevice(deviceId);
-      console.log(`❌ Device disconnected: ${deviceId} for user: ${req.sub}`);
+      notificationLogger.info({ deviceId, user: req.sub }, 'Device disconnected from events');
     });
   });
 
@@ -269,7 +275,7 @@ export function createCoreRoutes(dbConnection: Knex): Router {
       // Handle notifications
       pgClient.on('notification', listenChannel);
 
-      console.log('Listening on channel: table_changes');
+      notificationLogger.info({ channel: 'table_changes' }, 'Listening on PostgreSQL channel');
     });
   }
 
