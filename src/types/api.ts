@@ -1,10 +1,10 @@
 /**
  * API Request/Response Type Definitions
- * 
+ *
  * Types for API endpoints and request/response payloads
  */
 
-import type { Request } from 'express';
+import type {Request} from 'express';
 
 /**
  * Authenticated Request (extends Express Request with auth fields)

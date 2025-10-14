@@ -49,7 +49,7 @@ export interface TenantShardRequest {
  * Tenant Shard Response
  */
 export interface TenantShardResponse {
-  rows: Array<{ shard_idx: number }>;
+  rows: Array<{shard_idx: number}>;
 }
 
 /**

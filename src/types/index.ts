@@ -33,4 +33,5 @@ export type {
   TenantShardResponse,
 } from './grpc';
 // MTDD (Multi-Tenant Database Deployment) types
-export type { MtddMeta, SqlResult } from './mtdd';
+export type {MtddMeta, SqlResult} from './mtdd';
+
