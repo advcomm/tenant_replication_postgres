@@ -25,8 +25,8 @@ export const GRPC_MAX_MESSAGE_SIZE = 256 * 1024 * 1024;
  * gRPC connection options
  */
 export const GRPC_CONNECTION_OPTIONS = {
-  maxReceiveMessageLength: GRPC_MAX_MESSAGE_SIZE,
-  maxSendMessageLength: GRPC_MAX_MESSAGE_SIZE,
+	maxReceiveMessageLength: GRPC_MAX_MESSAGE_SIZE,
+	maxSendMessageLength: GRPC_MAX_MESSAGE_SIZE,
 } as const;
 
 /**

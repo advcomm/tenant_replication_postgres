@@ -4,14 +4,17 @@ import * as knexHelper from './helpers/knexHelper';
 import createCoreRoutes from './routes/router';
 
 // Export Firebase configuration interface and ActiveClients class for users of this library
-export { default as ActiveClients, FirebaseConfig } from './helpers/activeClients';
+export {
+	default as ActiveClients,
+	FirebaseConfig,
+} from './helpers/activeClients';
 
 export async function InitializeReplication(
-  app: Application,
-  dbConnection: knex.Knex<any, unknown[]>,
+	app: Application,
+	dbConnection: knex.Knex<any, unknown[]>,
 ) {
-  const coreRoutes = createCoreRoutes(dbConnection);
-  app.use('/mtdd', coreRoutes);
+	const coreRoutes = createCoreRoutes(dbConnection);
+	app.use('/mtdd', coreRoutes);
 }
 
 export default knexHelper;

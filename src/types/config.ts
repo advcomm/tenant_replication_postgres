@@ -11,32 +11,32 @@ import type { FirebaseConfig } from '../helpers/activeClients';
  * Database Configuration
  */
 export interface DatabaseConfig {
-  host: string;
-  port: number;
-  user: string;
-  password: string;
-  database: string;
-  pool?: {
-    min: number;
-    max: number;
-  };
+	host: string;
+	port: number;
+	user: string;
+	password: string;
+	database: string;
+	pool?: {
+		min: number;
+		max: number;
+	};
 }
 
 /**
  * MTDD Backend Configuration
  */
 export interface MtddBackendConfig {
-  backendServers: string[];
-  lookupServer: string;
-  isDevelopment?: boolean;
+	backendServers: string[];
+	lookupServer: string;
+	isDevelopment?: boolean;
 }
 
 /**
  * Portal Configuration
  */
 export interface PortalConfig {
-  tenantColumnName?: string;
-  [key: string]: unknown;
+	tenantColumnName?: string;
+	[key: string]: unknown;
 }
 
 /**
@@ -44,11 +44,11 @@ export interface PortalConfig {
  * This will be used when refactoring away from process.env
  */
 export interface LibraryConfig {
-  mtdd?: MtddBackendConfig;
-  database?: {
-    enabled: boolean;
-    config: DatabaseConfig;
-  };
-  firebase?: FirebaseConfig;
-  portal?: PortalConfig;
+	mtdd?: MtddBackendConfig;
+	database?: {
+		enabled: boolean;
+		config: DatabaseConfig;
+	};
+	firebase?: FirebaseConfig;
+	portal?: PortalConfig;
 }
