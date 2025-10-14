@@ -9,21 +9,23 @@ import type { TenantShardRequest } from '../../types/grpc';
 
 /**
  * Function to get tenant shard from lookup service
+ * @param lookupClient - gRPC lookup client (typed as any - gRPC doesn't export client types)
  */
 export async function getTenantShard(
-  lookupClient: any,
+  lookupClient: any, // gRPC client type not exported
   tenantName: string,
   tenantType: number,
 ): Promise<number> {
   return new Promise((resolve, reject) => {
     const request: TenantShardRequest = { tenantName, tenantType };
 
-    lookupClient.getTenantShard(request, (error: any, response: any) => {
+    lookupClient.getTenantShard(request, (error: unknown, response: unknown) => {
       if (error) {
-        console.error(`❌ Error getting tenant shard for tenantName ${tenantName}:`, error.message);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`❌ Error getting tenant shard for tenantName ${tenantName}:`, errorMessage);
         reject(error);
       } else {
-        const parsedResponse = parseResponse(response) as any;
+        const parsedResponse = parseResponse(response) as { rows: Array<{ shard_idx: number }> };
         const shardId = parsedResponse.rows?.[0]?.shard_idx;
 
         if (shardId === undefined || shardId === null) {
@@ -43,20 +45,22 @@ export async function getTenantShard(
 
 /**
  * Function to add tenant shard mapping
+ * @param lookupClient - gRPC lookup client (typed as any - gRPC doesn't export client types)
  */
 export async function addTenantShard(
-  lookupClient: any,
+  lookupClient: any, // gRPC client type not exported
   tenantName: string,
   tenantType: number,
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const request: TenantShardRequest = { tenantName, tenantType };
 
-    lookupClient.addTenantShard(request, (error: any, response: any) => {
+    lookupClient.addTenantShard(request, (error: unknown, response: unknown) => {
       if (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(
           `❌ Error adding tenant shard mapping for tenantName ${tenantName}:`,
-          error.message,
+          errorMessage,
         );
         reject(error);
       } else {
@@ -67,4 +71,3 @@ export async function addTenantShard(
     });
   });
 }
-

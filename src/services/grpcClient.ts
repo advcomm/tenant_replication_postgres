@@ -4,6 +4,7 @@
  * Main interface for communicating with gRPC backend servers
  */
 
+import type { ChannelMessage } from '../types/api';
 import {
   IS_SINGLE_SERVER_DEPLOYMENT,
   addTenantShard,
@@ -94,9 +95,10 @@ export class BackendClient {
         const selectedClient = clients[0];
 
         return new Promise((resolve, reject) => {
-          selectedClient.executeQuery(request, (error: any, response: any) => {
+          selectedClient.executeQuery(request, (error: unknown, response: unknown) => {
             if (error) {
-              console.error(`❌ [SINGLE-SERVER] Query execution failed:`, error.message);
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              console.error(`❌ [SINGLE-SERVER] Query execution failed:`, errorMessage);
               reject(error);
             } else {
               const parsedResponse = response;
@@ -264,7 +266,7 @@ export class BackendClient {
 
     const promises = clients.map((client: any, index: number) => {
       return new Promise((resolve, reject) => {
-        client.executeQuery(request, (error: any, response: any) => {
+        client.executeQuery(request, (error: unknown, response: unknown) => {
           if (error) {
             reject(error);
           } else if (response) {
@@ -296,17 +298,14 @@ export class BackendClient {
   /**
    * Add a tenant to shard mapping
    */
-  public static async addTenantShard(
-    tenantName: string,
-    tenantType: number = 1,
-  ): Promise<unknown> {
+  public static async addTenantShard(tenantName: string, tenantType: number = 1): Promise<unknown> {
     return await addTenantShard(lookupClient, tenantName, tenantType);
   }
 
   /**
    * Listen to a gRPC channel with streaming
    */
-  static ListenToChannel(channel: string, callback: (msg: any) => void): void {
+  static ListenToChannel(channel: string, callback: (msg: ChannelMessage) => void): void {
     listenToChannel(clients, channel, callback);
   }
 
@@ -317,4 +316,3 @@ export class BackendClient {
     console.log('📡 Backend gRPC client initialized with servers:', backendServers);
   }
 }
-

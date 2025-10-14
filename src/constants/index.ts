@@ -12,5 +12,3 @@ export * from './database';
 
 // Error message constants
 export * from './errors';
-
-

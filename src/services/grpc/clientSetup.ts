@@ -8,45 +8,47 @@ import * as grpc from '@grpc/grpc-js';
 import { createGrpcCredentials, createGrpcConnectionOptions, backendServers } from './config';
 
 // Manual gRPC service definition for database operations
+// Note: serialization functions use 'any' as required by @grpc/grpc-js API
 const dbServiceDefinition = {
   executeQuery: {
     path: '/DB.DBService/executeQuery',
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
-    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     responseDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
   },
   listenToChannel: {
     path: '/DB.DBService/listenToChannel',
     requestStream: false,
     responseStream: true, // This enables streaming responses
-    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
-    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     responseDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
   },
 };
 
 // Lookup service definition for tenant shard mapping
+// Note: serialization functions use 'any' as required by @grpc/grpc-js API
 const lookupServiceDefinition = {
   getTenantShard: {
     path: '/MTDD.LookupService/getTenantShard',
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
-    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     responseDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
   },
   addTenantShard: {
     path: '/MTDD.LookupService/addTenantShard',
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    requestSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     requestDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
-    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)),
+    responseSerialize: (value: any) => Buffer.from(JSON.stringify(value)), // gRPC API requires any
     responseDeserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
   },
 };
@@ -59,6 +61,7 @@ const LookupServiceClient = grpc.makeGenericClientConstructor(lookupServiceDefin
 const useInsecure = process.env.GRPC_INSECURE === 'true';
 
 // Create client instances for all backend servers
+// Note: clients typed as 'any[]' because gRPC client types are not exported by @grpc/grpc-js
 export const clients: any[] = backendServers.map((server) => {
   if (process.env.NODE_ENV !== 'development' && !useInsecure) {
     return new DBServiceClient(
@@ -68,7 +71,11 @@ export const clients: any[] = backendServers.map((server) => {
     );
   }
   if (useInsecure) {
-    return new DBServiceClient(`${server}`, createGrpcCredentials(true), createGrpcConnectionOptions(true));
+    return new DBServiceClient(
+      `${server}`,
+      createGrpcCredentials(true),
+      createGrpcConnectionOptions(true),
+    );
   }
   return undefined;
 });
@@ -105,4 +112,3 @@ if (process.env.NODE_ENV !== 'development' && !useInsecureLookup) {
     grpc.credentials.createInsecure(),
   );
 }
-

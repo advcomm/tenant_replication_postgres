@@ -50,11 +50,7 @@ export interface MtddMeta {
 
   // Transaction context
   transactionId?: string;
-  isolationLevel?:
-    | 'read_uncommitted'
-    | 'read_committed'
-    | 'repeatable_read'
-    | 'serializable';
+  isolationLevel?: 'read_uncommitted' | 'read_committed' | 'repeatable_read' | 'serializable';
 
   // Re-run detection (automatically set when complex query methods are used)
   IsReRun?: boolean;

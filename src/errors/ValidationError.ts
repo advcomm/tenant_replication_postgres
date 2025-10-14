@@ -23,5 +23,3 @@ export class AuthorizationError extends BaseError {
     super(message, 'AUTHORIZATION_ERROR', 403, context);
   }
 }
-
-

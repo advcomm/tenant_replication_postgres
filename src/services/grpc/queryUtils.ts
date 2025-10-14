@@ -32,12 +32,12 @@ export function convertQuestionMarksToPositional(query: string): string {
  */
 export function processNamedParameters(
   query: string,
-  values: Record<string, any> = {},
-): { query: string; params: any[] } {
+  values: Record<string, unknown> = {},
+): { query: string; params: unknown[] } {
   // Find all named parameters in the query (e.g., ${id}, ${status})
   const parameterRegex = /\$\{(\w+)\}/g;
   const foundParameters: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   let match;
 
   // Extract all parameter names from the query
@@ -75,11 +75,11 @@ export function processNamedParameters(
  */
 export function processQueryParameters(
   query: string,
-  valuesOrBindings: Record<string, any> | any[],
+  valuesOrBindings: Record<string, unknown> | unknown[],
   logPrefix: string = '',
-): { query: string; params: any[] } {
+): { query: string; params: unknown[] } {
   let processedQuery = query;
-  let params: any[];
+  let params: unknown[];
 
   // Handle both named parameters and direct bindings array
   if (Array.isArray(valuesOrBindings)) {
@@ -88,7 +88,10 @@ export function processQueryParameters(
     if (hasQuestionMarkParameters(query)) {
       processedQuery = convertQuestionMarksToPositional(query);
       if (logPrefix) {
-        console.log(`🔄 [${logPrefix}] Converted ? placeholders to PostgreSQL format:`, processedQuery);
+        console.log(
+          `🔄 [${logPrefix}] Converted ? placeholders to PostgreSQL format:`,
+          processedQuery,
+        );
       }
     }
   } else if (hasNamedParameters(query)) {
@@ -113,4 +116,3 @@ export function processQueryParameters(
 
   return { query: processedQuery, params };
 }
-

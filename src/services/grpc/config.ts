@@ -5,7 +5,12 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
-import { GRPC_SSL_CERTIFICATE, SSL_TARGET_OVERRIDE, DEFAULT_AUTHORITY, GRPC_MAX_MESSAGE_SIZE } from '../../constants/grpc';
+import {
+  GRPC_SSL_CERTIFICATE,
+  SSL_TARGET_OVERRIDE,
+  DEFAULT_AUTHORITY,
+  GRPC_MAX_MESSAGE_SIZE,
+} from '../../constants/grpc';
 import type { GrpcConnectionOptions } from '../../types/grpc';
 
 // Backend servers configuration
@@ -17,7 +22,9 @@ if (process.env.NODE_ENV !== 'development') {
   if (serverList) {
     backendServers.push(...serverList);
   } else {
-    throw new Error('No backend servers configured. Please set BACKEND_SERVERS environment variable.');
+    throw new Error(
+      'No backend servers configured. Please set BACKEND_SERVERS environment variable.',
+    );
   }
 } else {
   const serverList = JSON.parse(process.env.BACKEND_SERVERS || '["127.0.0.1"]');
@@ -67,4 +74,3 @@ export function createGrpcCredentials(useInsecure: boolean = false): grpc.Channe
   }
   return grpc.credentials.createSsl(Buffer.from(GRPC_SSL_CERTIFICATE));
 }
-

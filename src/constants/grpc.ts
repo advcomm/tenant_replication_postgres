@@ -67,5 +67,3 @@ export const SSL_TARGET_OVERRIDE = 'localhost';
  * Default authority for HTTP/2
  */
 export const DEFAULT_AUTHORITY = '95.216.189.60';
-
-

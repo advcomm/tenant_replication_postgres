@@ -9,9 +9,10 @@ import type { ChannelMessage } from '../../types/api';
 
 /**
  * Listen to a gRPC channel with streaming
+ * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
  */
 export function listenToChannel(
-  clients: any[],
+  clients: any[], // gRPC client type not exported
   channel: string,
   callback: (msg: ChannelMessage) => void,
 ): void {
@@ -30,9 +31,13 @@ export function listenToChannel(
 
   const stream = selectedClient.listenToChannel(channelRequest);
 
-  stream.on('data', (response: any) => {
+  stream.on('data', (response: unknown) => {
     try {
-      const parsedResponse = parseResponse(response) as any;
+      const parsedResponse = parseResponse(response) as {
+        data: string;
+        channelName: string;
+        timestamp: string;
+      };
       // Convert the gRPC response back to the expected format
       const msg: ChannelMessage = {
         payload: parsedResponse.data,
@@ -45,8 +50,9 @@ export function listenToChannel(
     }
   });
 
-  stream.on('error', (error: any) => {
-    console.error(`❌ Channel stream error for ${channel}:`, error.message);
+  stream.on('error', (error: unknown) => {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`❌ Channel stream error for ${channel}:`, errorMessage);
     // You could implement reconnection logic here
   });
 
@@ -55,4 +61,3 @@ export function listenToChannel(
     // You could implement reconnection logic here
   });
 }
-

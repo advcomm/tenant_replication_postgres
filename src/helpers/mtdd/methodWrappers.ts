@@ -88,4 +88,3 @@ export function createReRunMethodWrapper(originalMethod: Function, methodName: s
     return result;
   };
 }
-

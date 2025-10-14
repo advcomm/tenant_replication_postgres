@@ -14,12 +14,7 @@ export class MtddError extends BaseError {
 
 export class TenantNotFoundError extends BaseError {
   constructor(tenantId: string | number, context?: Record<string, unknown>) {
-    super(
-      `Tenant not found: ${tenantId}`,
-      'TENANT_NOT_FOUND',
-      404,
-      { tenantId, ...context }
-    );
+    super(`Tenant not found: ${tenantId}`, 'TENANT_NOT_FOUND', 404, { tenantId, ...context });
   }
 }
 
@@ -31,5 +26,3 @@ export class ShardNotFoundError extends BaseError {
     });
   }
 }
-
-

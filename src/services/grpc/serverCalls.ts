@@ -9,9 +9,10 @@ import type { GrpcQueryRequest } from '../../types/grpc';
 
 /**
  * Function to call all servers concurrently and return first valid response (Promise.race implementation)
+ * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
  */
 export async function callAllServersRace(
-  clients: any[],
+  clients: any[], // gRPC client type not exported
   request: GrpcQueryRequest,
 ): Promise<unknown> {
   if (clients.length === 0) {
@@ -21,7 +22,7 @@ export async function callAllServersRace(
   // Create promises for all gRPC calls
   const promises = clients.map((client: any, index: number) => {
     return new Promise((resolve, reject) => {
-      client.executeQuery(request, (error: any, response: any) => {
+      client.executeQuery(request, (error: unknown, response: unknown) => {
         if (error) {
           reject(error);
         } else if (response) {
@@ -40,9 +41,10 @@ export async function callAllServersRace(
 
 /**
  * Function to call all servers and return first successful response (Promise.any implementation)
+ * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
  */
 export async function callAllServersAny(
-  clients: any[],
+  clients: any[], // gRPC client type not exported
   request: GrpcQueryRequest,
 ): Promise<unknown> {
   if (clients.length === 0) {
@@ -52,7 +54,7 @@ export async function callAllServersAny(
   // Create promises for all gRPC calls
   const promises = clients.map((client: any, index: number) => {
     return new Promise((resolve, reject) => {
-      client.executeQuery(request, (error: any, response: any) => {
+      client.executeQuery(request, (error: unknown, response: unknown) => {
         if (error) {
           reject(error);
         } else if (response) {
@@ -75,9 +77,10 @@ export async function callAllServersAny(
 
 /**
  * Function to call all servers and wait for all responses (Promise.all implementation)
+ * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
  */
 export async function callAllServersAll(
-  clients: any[],
+  clients: any[], // gRPC client type not exported
   request: GrpcQueryRequest,
 ): Promise<unknown[]> {
   if (clients.length === 0) {
@@ -87,7 +90,7 @@ export async function callAllServersAll(
   // Create promises for all gRPC calls
   const promises = clients.map((client: any, index: number) => {
     return new Promise((resolve, reject) => {
-      client.executeQuery(request, (error: any, response: any) => {
+      client.executeQuery(request, (error: unknown, response: unknown) => {
         if (error) {
           reject(error);
         } else if (response) {
@@ -106,9 +109,10 @@ export async function callAllServersAll(
 
 /**
  * Function to call specific server based on TenantID
+ * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
  */
 export async function callSpecificServer(
-  clients: any[],
+  clients: any[], // gRPC client type not exported
   tenantId: number,
   request: GrpcQueryRequest,
 ): Promise<unknown> {
@@ -121,7 +125,7 @@ export async function callSpecificServer(
   const selectedClient = clients[serverIndex];
 
   return new Promise((resolve, reject) => {
-    selectedClient.executeQuery(request, (error: any, response: any) => {
+    selectedClient.executeQuery(request, (error: unknown, response: unknown) => {
       if (error) {
         reject(error);
       } else {
@@ -134,9 +138,10 @@ export async function callSpecificServer(
 
 /**
  * Function to call specific server by shard index
+ * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
  */
 export async function callSpecificServerByShard(
-  clients: any[],
+  clients: any[], // gRPC client type not exported
   shardIndex: number,
   request: GrpcQueryRequest,
 ): Promise<unknown> {
@@ -151,7 +156,7 @@ export async function callSpecificServerByShard(
   const selectedClient = clients[shardIndex];
 
   return new Promise((resolve, reject) => {
-    selectedClient.executeQuery(request, (error: any, response: any) => {
+    selectedClient.executeQuery(request, (error: unknown, response: unknown) => {
       if (error) {
         reject(error);
       } else {
@@ -161,4 +166,3 @@ export async function callSpecificServerByShard(
     });
   });
 }
-

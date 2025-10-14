@@ -13,7 +13,7 @@ export class BaseError extends Error {
     message: string,
     code: string = 'INTERNAL_ERROR',
     statusCode: number = 500,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -38,5 +38,3 @@ export class BaseError extends Error {
     };
   }
 }
-
-

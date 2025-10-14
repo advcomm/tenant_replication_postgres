@@ -86,4 +86,3 @@ export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
     throw error;
   }
 }
-

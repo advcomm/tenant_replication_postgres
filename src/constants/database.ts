@@ -34,5 +34,3 @@ export const DEFAULT_MAX_RETRIES = 3;
  * PostgreSQL channel name for table changes
  */
 export const TABLE_CHANGES_CHANNEL = 'table_changes';
-
-

@@ -8,16 +8,14 @@
 export { BaseError } from './BaseError';
 
 // gRPC errors
-export { GrpcError, GrpcConnectionError, GrpcTimeoutError } from './GrpcError';
+export { GrpcConnectionError, GrpcError, GrpcTimeoutError } from './GrpcError';
 
 // MTDD errors
-export { MtddError, TenantNotFoundError, ShardNotFoundError } from './MtddError';
+export { MtddError, ShardNotFoundError, TenantNotFoundError } from './MtddError';
 
 // Validation errors
 export {
-  ValidationError,
   AuthenticationError,
   AuthorizationError,
+  ValidationError,
 } from './ValidationError';
-
-

@@ -10,7 +10,7 @@ import { createMtddMethodWrapper, createReRunMethodWrapper } from './methodWrapp
 import { grpcMtddHandler } from './grpcHandler';
 
 // Global custom MTDD handler - can be set by users
-let customMtddHandler: ((meta: MtddMeta, queryObject: any, sqlResult: SqlResult) => void) | null =
+let customMtddHandler: ((meta: MtddMeta, queryObject: unknown, sqlResult: SqlResult) => void) | null =
   null;
 
 /**
@@ -50,7 +50,8 @@ export function enableMtddRouting(knexInstance: Knex): void {
 
   try {
     // Helper function to perform special MTDD actions when toSQL() is auto-appended
-    const performMtddAutoActions = async (queryObject: any, sqlResult: SqlResult): Promise<any> => {
+    // Note: queryObject typed as 'any' to access dynamic Knex query builder properties
+    const performMtddAutoActions = async (queryObject: any, sqlResult: SqlResult): Promise<unknown> => {
       const mtddMeta = sqlResult.options?.mtdd;
       if (!mtddMeta) return [];
 
@@ -157,7 +158,7 @@ export function enableMtddRouting(knexInstance: Knex): void {
     };
 
     // Helper function to set up chain-end detection
-    const setupChainEndDetection = (queryObject: any) => {
+    const setupChainEndDetection = (queryObject: any) => { // any required for dynamic method patching
       const chainEndMethods = ['then', 'catch', 'finally', 'stream', 'pipe'];
 
       chainEndMethods.forEach((endMethod) => {
@@ -808,7 +809,7 @@ export function enableMtddRouting(knexInstance: Knex): void {
  * @param handler - Function to handle MTDD metadata when toSQL() is auto-appended
  */
 export function setCustomMtddHandler(
-  handler: ((meta: MtddMeta, queryObject: any, sqlResult: SqlResult) => void) | null,
+  handler: ((meta: MtddMeta, queryObject: unknown, sqlResult: SqlResult) => void) | null,
 ): void {
   customMtddHandler = handler;
 }
@@ -817,7 +818,7 @@ export function setCustomMtddHandler(
  * Get the current custom MTDD handler
  */
 export function getCustomMtddHandler():
-  | ((meta: MtddMeta, queryObject: any, sqlResult: SqlResult) => void)
+  | ((meta: MtddMeta, queryObject: unknown, sqlResult: SqlResult) => void)
   | null {
   return customMtddHandler;
 }

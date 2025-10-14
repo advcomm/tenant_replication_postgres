@@ -23,5 +23,3 @@ export class GrpcTimeoutError extends BaseError {
     super(message, 'GRPC_TIMEOUT_ERROR', 504, context);
   }
 }
-
-

@@ -58,4 +58,3 @@ export function convertBigIntToString(obj: unknown): unknown {
 
   return obj;
 }
-
