@@ -1,5 +1,6 @@
 import type express from 'express';
 import admin from 'firebase-admin';
+import { notificationLogger } from '../utils/logger';
 
 /**
  * Firebase Service Account Configuration Interface
@@ -61,7 +62,7 @@ export default class ActiveClients {
    */
   static InitializeFirebase(config?: FirebaseConfig | string | null) {
     if (ActiveClients.firebase) {
-      console.warn('Firebase already initialized, skipping re-initialization');
+      notificationLogger.warn('Firebase already initialized, skipping re-initialization');
       return;
     }
 
@@ -76,7 +77,7 @@ export default class ActiveClients {
         try {
           credential = admin.credential.cert(require(config));
         } catch (error) {
-          console.error(`Failed to load Firebase config from path: ${config}`, error);
+          notificationLogger.error({ path: config, error }, 'Failed to load Firebase config from path');
           throw new Error(`Firebase config file not found at path: ${config}`);
         }
       } else {
@@ -93,7 +94,7 @@ export default class ActiveClients {
           const configObj = JSON.parse(firebaseConfigEnv);
           credential = admin.credential.cert(configObj);
         } catch (error) {
-          console.error('Failed to parse Firebase config from environment variable', error);
+          notificationLogger.error({ error }, 'Failed to parse Firebase config from environment variable');
           throw new Error(
             'Invalid Firebase config in FIREBASE_SERVICE_ACCOUNT_JSON environment variable',
           );
@@ -102,9 +103,9 @@ export default class ActiveClients {
         try {
           credential = admin.credential.cert(require(firebaseConfigPath));
         } catch (error) {
-          console.error(
-            `Failed to load Firebase config from environment path: ${firebaseConfigPath}`,
-            error,
+          notificationLogger.error(
+            { path: firebaseConfigPath, error },
+            'Failed to load Firebase config from environment path',
           );
           throw new Error(`Firebase config file not found at path: ${firebaseConfigPath}`);
         }
@@ -112,11 +113,11 @@ export default class ActiveClients {
         // Fall back to default file (for backward compatibility)
         try {
           credential = admin.credential.cert(require('./firebase-service-account.json'));
-          console.warn(
+          notificationLogger.warn(
             'Using default Firebase config file. Consider providing config via InitializeFirebase() or environment variables.',
           );
         } catch (error) {
-          console.error('No Firebase configuration provided and default file not found', error);
+          notificationLogger.error({ error }, 'No Firebase configuration provided and default file not found');
           throw new Error(
             'Firebase configuration required. Provide config via InitializeFirebase() method, FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_PATH environment variable.',
           );
@@ -141,7 +142,9 @@ export default class ActiveClients {
    */
   static resetFirebase() {
     if (ActiveClients.firebase) {
-      ActiveClients.firebase.delete().catch(console.error);
+      ActiveClients.firebase.delete().catch((error) => 
+        notificationLogger.error({ error }, 'Error deleting Firebase instance')
+      );
     }
     ActiveClients.firebase = null;
     ActiveClients.firebaseConfig = null;
@@ -170,12 +173,12 @@ export default class ActiveClients {
       ActiveClients.web.set(deviceId, new Map());
     }
     ActiveClients.web.get(deviceId)?.set(eventName, res);
-    console.log(`✅ Device registered: ${deviceId}`);
+    notificationLogger.info({ deviceId, eventName, type: 'web' }, 'Device registered');
   }
 
   static DeleteWebDevice(deviceId: string) {
     ActiveClients.web.delete(deviceId);
-    console.log(`❌ Device ${deviceId} removed completely`);
+    notificationLogger.info({ deviceId, type: 'web' }, 'Device removed');
   }
 
   static AddMobileDevice(deviceId: string, fcmToken: string) {
@@ -183,12 +186,12 @@ export default class ActiveClients {
       ActiveClients.InitializeFirebase();
     }
     ActiveClients.mobile.set(deviceId, fcmToken);
-    console.log(`✅ Device registered: ${deviceId}`);
+    notificationLogger.info({ deviceId, type: 'mobile' }, 'Device registered');
   }
 
   static DeleteMobileDevice(deviceId: string) {
     ActiveClients.mobile.delete(deviceId);
-    console.log(`❌ Device ${deviceId} removed completely`);
+    notificationLogger.info({ deviceId, type: 'mobile' }, 'Device removed');
   }
 
   static SendPushNotification(fcmToken: string, message: { title: string; body: string }) {
@@ -205,7 +208,7 @@ export default class ActiveClients {
     admin
       .messaging()
       .send(payload)
-      .then((response) => console.log('📢 Push sent:', response))
-      .catch((err) => console.error('❌ Push failed:', err));
+      .then((response) => notificationLogger.info({ response, fcmToken }, 'Push notification sent'))
+      .catch((err) => notificationLogger.error({ error: err, fcmToken }, 'Push notification failed'));
   }
 }
