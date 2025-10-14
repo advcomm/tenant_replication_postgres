@@ -4,6 +4,8 @@
  * Helper functions for gRPC response parsing and data conversion
  */
 
+import { grpcLogger } from '../../utils/logger';
+
 /**
  * Parse response helper function - extracts result data to match PostgreSQL format
  */
@@ -14,7 +16,7 @@ export function parseResponse(response: unknown): unknown {
   }
   // If response is already properly formatted, return as-is
   if (response && typeof response === 'object') {
-    console.log('🔧 [GRPC-RESPONSE] Response already in correct format');
+    grpcLogger.debug('Response already in correct format');
     return response;
   }
 

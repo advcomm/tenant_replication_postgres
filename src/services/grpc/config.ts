@@ -12,6 +12,7 @@ import {
   GRPC_MAX_MESSAGE_SIZE,
 } from '../../constants/grpc';
 import type { GrpcConnectionOptions } from '../../types/grpc';
+import { grpcLogger } from '../../utils/logger';
 
 // Backend servers configuration
 export const backendServers: string[] = [];
@@ -35,16 +36,20 @@ if (process.env.NODE_ENV !== 'development') {
 export const IS_SINGLE_SERVER_DEPLOYMENT = backendServers.length === 1;
 
 if (process.env.NODE_ENV !== 'development') {
-  console.log(`🏗️  [GRPC-CONFIG] Backend Servers: ${backendServers.length} server(s)`);
-  console.log(`🏗️  [GRPC-CONFIG] Servers: ${backendServers.join(', ')}`);
-  console.log(
-    `🏗️  [GRPC-CONFIG] Deployment Mode: ${IS_SINGLE_SERVER_DEPLOYMENT ? 'Single Server (Simplified)' : 'Multi-Server (MTDD)'}`,
+  grpcLogger.info(
+    { serverCount: backendServers.length, servers: backendServers },
+    'Backend servers configuration loaded',
+  );
+  grpcLogger.info(
+    {
+      mode: IS_SINGLE_SERVER_DEPLOYMENT ? 'Single Server (Simplified)' : 'Multi-Server (MTDD)',
+      isSingleServer: IS_SINGLE_SERVER_DEPLOYMENT,
+    },
+    'Deployment mode configured',
   );
 
   if (IS_SINGLE_SERVER_DEPLOYMENT) {
-    console.log(
-      `🎯 [GRPC-CONFIG] Single server detected - MTDD optimizations will be bypassed for simplified routing`,
-    );
+    grpcLogger.info('Single server detected - using simplified routing');
   }
 }
 

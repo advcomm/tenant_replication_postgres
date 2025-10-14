@@ -6,6 +6,7 @@ import {
   setCustomMtddHandler,
   getCustomMtddHandler,
 } from './mtdd';
+import { dbLogger } from '../utils/logger';
 
 // Create database connection using environment variables
 function createDatabaseConnection(): Knex {
@@ -52,11 +53,11 @@ function createDatabaseConnection(): Knex {
 
   // Enable MTDD routing only for non-development environments
   if (process.env.NODE_ENV !== 'development') {
-    console.log('🚀 [GRPC-ONLY] Creating gRPC-only database interface');
-    console.log('🚀 [GRPC-ONLY] Bypassing PostgreSQL connection - all operations via gRPC');
+    dbLogger.info('Creating gRPC-only database interface');
+    dbLogger.info('Bypassing PostgreSQL connection - all operations via gRPC');
     enableMtddRouting(result);
   } else {
-    console.log('🛠️ [DEVELOPMENT] Enabling development MTDD stubs - .mtdd() calls will be no-ops');
+    dbLogger.info('Enabling development MTDD stubs - .mtdd() calls will be no-ops');
     enableDevelopmentMtddStubs(result);
   }
   return result;

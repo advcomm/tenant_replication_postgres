@@ -6,6 +6,7 @@
 
 import { parseResponse } from './utils';
 import type { TenantShardRequest } from '../../types/grpc';
+import { grpcLogger } from '../../utils/logger';
 
 /**
  * Function to get tenant shard from lookup service
@@ -22,7 +23,7 @@ export async function getTenantShard(
     lookupClient.getTenantShard(request, (error: unknown, response: unknown) => {
       if (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`❌ Error getting tenant shard for tenantName ${tenantName}:`, errorMessage);
+        grpcLogger.error({ tenantName, error: errorMessage }, 'Error getting tenant shard');
         reject(error);
       } else {
         const parsedResponse = parseResponse(response) as { rows: Array<{ shard_idx: number }> };
@@ -35,7 +36,7 @@ export async function getTenantShard(
             ),
           );
         } else {
-          console.log(`📍 Tenant ${tenantName} mapped to shard ${shardId}`);
+          grpcLogger.info({ tenantName, shardId }, 'Tenant mapped to shard');
           resolve(shardId);
         }
       }
@@ -58,14 +59,14 @@ export async function addTenantShard(
     lookupClient.addTenantShard(request, (error: unknown, response: unknown) => {
       if (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(
-          `❌ Error adding tenant shard mapping for tenantName ${tenantName}:`,
-          errorMessage,
+        grpcLogger.error(
+          { tenantName, tenantType, error: errorMessage },
+          'Error adding tenant shard mapping',
         );
         reject(error);
       } else {
         const parsedResponse = parseResponse(response);
-        console.log(`✅ Added tenant ${tenantName} to shard ${tenantType}`);
+        grpcLogger.info({ tenantName, tenantType }, 'Tenant shard mapping added');
         resolve(parsedResponse);
       }
     });

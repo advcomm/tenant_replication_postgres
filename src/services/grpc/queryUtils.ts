@@ -4,6 +4,8 @@
  * Helper functions for query parameter processing and conversion
  */
 
+import { grpcLogger } from '../../utils/logger';
+
 /**
  * Check if query contains named parameters (e.g., ${id}, ${status})
  */
@@ -88,9 +90,9 @@ export function processQueryParameters(
     if (hasQuestionMarkParameters(query)) {
       processedQuery = convertQuestionMarksToPositional(query);
       if (logPrefix) {
-        console.log(
-          `🔄 [${logPrefix}] Converted ? placeholders to PostgreSQL format:`,
-          processedQuery,
+        grpcLogger.debug(
+          { query: processedQuery, context: logPrefix },
+          'Converted ? placeholders to PostgreSQL format',
         );
       }
     }
@@ -104,9 +106,9 @@ export function processQueryParameters(
     processedQuery = convertQuestionMarksToPositional(query);
     params = [];
     if (logPrefix) {
-      console.log(
-        `🔄 [${logPrefix}] Converted ? placeholders to PostgreSQL format (no bindings):`,
-        processedQuery,
+      grpcLogger.debug(
+        { query: processedQuery, context: logPrefix },
+        'Converted ? placeholders to PostgreSQL format (no bindings)',
       );
     }
   } else {
