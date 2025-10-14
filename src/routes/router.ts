@@ -1,7 +1,9 @@
 import { RedisService } from '@advcomm/utils';
 import { decodeAccessToken } from '@advcomm/utils/dist/helper/authenticationHelper';
+import type { Response } from 'express';
 import { Router } from 'express';
 import type { Knex } from 'knex';
+import type { AuthenticatedRequest, ChannelMessage } from '../types/api';
 import ActiveClients from '../helpers/activeClients';
 import { db as knexHelperDb } from '../helpers/knexHelper';
 import { BackendClient } from '../services/grpcClient';
@@ -111,7 +113,7 @@ export function createCoreRoutes(dbConnection: Knex): Router {
   //     res.json(response);
   // });
 
-  router.get('/Load', async (req: any, res: any) => {
+  router.get('/Load', async (req: AuthenticatedRequest, res: Response) => {
     const TenantID = req.tid;
     const sub = req.sub;
     const roles = req.roles || [];
@@ -144,14 +146,15 @@ export function createCoreRoutes(dbConnection: Knex): Router {
       console.log(`📊 LoadData - Result:`, result);
 
       res.status(200).json(result.rows);
-    } catch (error: any) {
-      console.error(`❌ LoadData error:`, error);
-      res.status(500).json({ message: 'LoadData request failed', error: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ LoadData error:`, errorMessage);
+      res.status(500).json({ message: 'LoadData request failed', error: errorMessage });
     }
     return;
   });
 
-  router.get('/events', async (req: any, res) => {
+  router.get('/events', async (req: AuthenticatedRequest, res: Response) => {
     // Handle authorization within this endpoint
     try {
       let authToken = req.headers['authorization'];
@@ -175,7 +178,10 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 
       // Extract and decode token
       req.token = authToken.split(' ')[1];
-      const decoded: any = await decodeAccessToken(req);
+      const decoded = (await decodeAccessToken(req)) as {
+        IsSuccess: boolean;
+        payload: { sub: string; tid: string; roles: string[] };
+      };
 
       if (!decoded.IsSuccess) {
         return res.status(401).json({
@@ -192,8 +198,9 @@ export function createCoreRoutes(dbConnection: Knex): Router {
       console.log(
         `✅ Events endpoint authorized - User: ${sub}, TenantID: ${tid}, Roles: ${roles.join(', ')}`,
       );
-    } catch (authError: any) {
-      console.error('❌ Events endpoint authentication failed:', authError.message);
+    } catch (authError: unknown) {
+      const errorMessage = authError instanceof Error ? authError.message : 'Unknown error';
+      console.error('❌ Events endpoint authentication failed:', errorMessage);
       return res.status(401).json({
         message: 'Authentication failed for events endpoint',
       });
@@ -219,7 +226,7 @@ export function createCoreRoutes(dbConnection: Knex): Router {
   });
 
   ///Default channel listener if not any custom channel is provided.
-  const listenChannel = async (msg: any) => {
+  const listenChannel = async (msg: ChannelMessage) => {
     const { table, action, data } =
       process.env.NODE_ENV !== 'development'
         ? JSON.parse(JSON.parse(msg.payload))
@@ -256,6 +263,7 @@ export function createCoreRoutes(dbConnection: Knex): Router {
   } else {
     db.client.acquireConnection().then((pgClient: any) => {
       // Subscribe to a channel
+      // Note: pgClient is typed as 'any' here because we're using internal Knex/pg API
       pgClient.query('LISTEN table_changes');
 
       // Handle notifications
