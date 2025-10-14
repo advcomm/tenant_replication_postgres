@@ -62,3 +62,4 @@ node_modules/
 # Local development documentation
 TOOLING_DECISION.md
 REFACTORING_PLAN.md
+LIBRARY_DESIGN_DECISIONS.md
