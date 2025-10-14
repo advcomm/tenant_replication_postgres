@@ -58,3 +58,7 @@ node_modules/
 !.github/workflows/
 !.github/workflows/*.yml
 .env
+
+# Local development documentation
+TOOLING_DECISION.md
+REFACTORING_PLAN.md
