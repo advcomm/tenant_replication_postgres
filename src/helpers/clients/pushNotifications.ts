@@ -6,8 +6,8 @@
 
 import admin from 'firebase-admin';
 import { notificationLogger } from '@/utils/logger';
-import { FirebaseClientManager } from './firebaseClient';
-import { MobileClientManager } from './mobileClients';
+import { getFirebaseInstance } from './firebaseClient';
+import { getMobileDeviceCount, getMobileFcmToken, getMobileClients } from './mobileClients';
 
 /**
  * Push message structure
@@ -18,81 +18,76 @@ export interface PushMessage {
 }
 
 /**
- * Push Notification Service
+ * Send push notification to a specific FCM token
+ * @param fcmToken - Firebase Cloud Messaging token
+ * @param message - Notification message with title and body
  */
-export class PushNotificationService {
-	/**
-	 * Send push notification to a specific FCM token
-	 * @param fcmToken - Firebase Cloud Messaging token
-	 * @param message - Notification message with title and body
-	 */
-	static send(fcmToken: string, message: PushMessage): void {
-		const firebase = FirebaseClientManager.getInstance();
+export function sendPushNotification(fcmToken: string, message: PushMessage): void {
+	const firebase = getFirebaseInstance();
 
-		if (!firebase) {
-			throw new Error('Firebase not initialized');
-		}
-
-		const deviceCount = MobileClientManager.getDeviceCount();
-		const payload = {
-			token: fcmToken,
-			data: {
-				title: message.title,
-				body: message.body,
-			} as { [key: string]: string },
-		};
-
-		admin
-			.messaging()
-			.send(payload)
-			.then((response) =>
-				notificationLogger.info(
-					{ response, fcmToken, deviceCount },
-					'Push notification sent',
-				),
-			)
-			.catch((err) =>
-				notificationLogger.error(
-					{ error: err, fcmToken },
-					'Push notification failed',
-				),
-			);
+	if (!firebase) {
+		throw new Error('Firebase not initialized');
 	}
 
-	/**
-	 * Send push notification to a device by ID
-	 * @param deviceId - Device identifier
-	 * @param message - Notification message
-	 */
-	static sendToDevice(deviceId: string, message: PushMessage): void {
-		const fcmToken = MobileClientManager.getFcmToken(deviceId);
+	const deviceCount = getMobileDeviceCount();
+	const payload = {
+		token: fcmToken,
+		data: {
+			title: message.title,
+			body: message.body,
+		} as { [key: string]: string },
+	};
 
-		if (!fcmToken) {
-			notificationLogger.warn(
-				{ deviceId },
-				'Cannot send push notification: device not registered',
-			);
-			return;
-		}
-
-		PushNotificationService.send(fcmToken, message);
-	}
-
-	/**
-	 * Broadcast push notification to all registered mobile devices
-	 * @param message - Notification message
-	 */
-	static broadcast(message: PushMessage): void {
-		const clients = MobileClientManager.getClients();
-
-		for (const [deviceId, fcmToken] of clients.entries()) {
-			PushNotificationService.send(fcmToken, message);
-		}
-
-		notificationLogger.info(
-			{ deviceCount: clients.size },
-			'Push notification broadcast sent',
+	admin
+		.messaging()
+		.send(payload)
+		.then((response) =>
+			notificationLogger.info(
+				{ response, fcmToken, deviceCount },
+				'Push notification sent',
+			),
+		)
+		.catch((err) =>
+			notificationLogger.error(
+				{ error: err, fcmToken },
+				'Push notification failed',
+			),
 		);
+}
+
+/**
+ * Send push notification to a device by ID
+ * @param deviceId - Device identifier
+ * @param message - Notification message
+ */
+export function sendPushNotificationToDevice(deviceId: string, message: PushMessage): void {
+	const fcmToken = getMobileFcmToken(deviceId);
+
+	if (!fcmToken) {
+		notificationLogger.warn(
+			{ deviceId },
+			'Cannot send push notification: device not registered',
+		);
+		return;
 	}
+
+	sendPushNotification(fcmToken, message);
+}
+
+/**
+ * Broadcast push notification to all registered mobile devices
+ * @param message - Notification message
+ */
+export function broadcastPushNotification(message: PushMessage): void {
+	const clients = getMobileClients();
+
+	for (const [deviceId, fcmToken] of clients.entries()) {
+		sendPushNotification(fcmToken, message);
+	}
+
+	notificationLogger.info(
+		{ deviceCount: clients.size },
+		'Push notification broadcast sent',
+	);
 }
 

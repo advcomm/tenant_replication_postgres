@@ -9,29 +9,28 @@ import { notificationLogger } from '@/utils/logger';
 import type { FirebaseConfig } from './types';
 
 /**
- * Firebase Client Manager
+ * Firebase app instance
  */
-export class FirebaseClientManager {
-	private static instance: admin.app.App | null = null;
-	private static config: FirebaseConfig | string | null = null;
+let firebaseInstance: admin.app.App | null = null;
+let firebaseConfig: FirebaseConfig | string | null = null;
 
-	/**
-	 * Initialize Firebase with custom configuration
-	 * @param config - Firebase service account config object, file path, or null to use default
-	 */
-	static initialize(config?: FirebaseConfig | string | null): void {
-		if (FirebaseClientManager.instance) {
+/**
+ * Initialize Firebase with custom configuration
+ * @param config - Firebase service account config object, file path, or null to use default
+ */
+export function initializeFirebase(config?: FirebaseConfig | string | null): void {
+	if (firebaseInstance) {
 			notificationLogger.warn(
 				'Firebase already initialized, skipping re-initialization',
 			);
 			return;
 		}
 
-		let credential;
+	let credential;
 
-		if (config) {
-			// Store the config for future use
-			FirebaseClientManager.config = config;
+	if (config) {
+		// Store the config for future use
+		firebaseConfig = config;
 
 			if (typeof config === 'string') {
 				// Config is a file path
@@ -99,48 +98,47 @@ export class FirebaseClientManager {
 			}
 		}
 
-		FirebaseClientManager.instance = admin.initializeApp({
-			credential: credential,
-		});
-	}
+	firebaseInstance = admin.initializeApp({
+		credential: credential,
+	});
+}
 
-	/**
-	 * Get Firebase instance
-	 */
-	static getInstance(): admin.app.App | null {
-		return FirebaseClientManager.instance;
-	}
+/**
+ * Get Firebase instance
+ */
+export function getFirebaseInstance(): admin.app.App | null {
+	return firebaseInstance;
+}
 
-	/**
-	 * Check if Firebase is initialized
-	 */
-	static isInitialized(): boolean {
-		return FirebaseClientManager.instance !== null;
-	}
+/**
+ * Check if Firebase is initialized
+ */
+export function isFirebaseInitialized(): boolean {
+	return firebaseInstance !== null;
+}
 
-	/**
-	 * Reset Firebase instance (useful for testing or reconfiguration)
-	 */
-	static reset(): void {
-		if (FirebaseClientManager.instance) {
-			FirebaseClientManager.instance
-				.delete()
-				.catch((error) =>
-					notificationLogger.error(
-						{ error },
-						'Error deleting Firebase instance',
-					),
-				);
-		}
-		FirebaseClientManager.instance = null;
-		FirebaseClientManager.config = null;
+/**
+ * Reset Firebase instance (useful for testing or reconfiguration)
+ */
+export function resetFirebase(): void {
+	if (firebaseInstance) {
+		firebaseInstance
+			.delete()
+			.catch((error) =>
+				notificationLogger.error(
+					{ error },
+					'Error deleting Firebase instance',
+				),
+			);
 	}
+	firebaseInstance = null;
+	firebaseConfig = null;
+}
 
-	/**
-	 * Get current Firebase configuration (returns null if using default file)
-	 */
-	static getConfig(): FirebaseConfig | string | null {
-		return FirebaseClientManager.config;
-	}
+/**
+ * Get current Firebase configuration (returns null if using default file)
+ */
+export function getFirebaseConfig(): FirebaseConfig | string | null {
+	return firebaseConfig;
 }
 
