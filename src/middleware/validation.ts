@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { z, type ZodError, type ZodSchema } from 'zod';
-import { apiLogger } from '../utils/logger';
+import { apiLogger } from '@/utils/logger';
 
 /**
  * Validation schemas for API endpoints

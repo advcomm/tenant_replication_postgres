@@ -4,7 +4,7 @@
  * Helper functions for gRPC response parsing and data conversion
  */
 
-import { grpcLogger } from '../../utils/logger';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Parse response helper function - extracts result data to match PostgreSQL format

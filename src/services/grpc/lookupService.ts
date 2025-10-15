@@ -5,8 +5,8 @@
  */
 
 import { parseResponse } from './utils';
-import type { TenantShardRequest } from '../../types/grpc';
-import { grpcLogger } from '../../utils/logger';
+import type { TenantShardRequest } from '@/types/grpc';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Function to get tenant shard from lookup service

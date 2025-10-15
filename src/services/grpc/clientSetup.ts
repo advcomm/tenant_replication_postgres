@@ -10,7 +10,7 @@ import {
 	createGrpcConnectionOptions,
 	backendServers,
 } from './config';
-import { config } from '../../config/configHolder';
+import { config } from '@/config/configHolder';
 
 // Manual gRPC service definition for database operations
 // Note: serialization functions use 'any' as required by @grpc/grpc-js API

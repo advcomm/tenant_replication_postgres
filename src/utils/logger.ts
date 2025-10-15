@@ -5,7 +5,7 @@
  */
 
 import pino from 'pino';
-import { config } from '../config/configHolder';
+import { config } from '@/config/configHolder';
 
 /**
  * Base logger configuration

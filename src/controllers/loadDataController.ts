@@ -6,8 +6,8 @@
 
 import type { Response } from 'express';
 import type { Knex } from 'knex';
-import type { AuthenticatedRequest } from '../types/api';
-import { LoadDataService } from '../services/loadDataService';
+import type { AuthenticatedRequest } from '@/types/api';
+import { LoadDataService } from '@/services/loadDataService';
 
 /**
  * LoadData Controller

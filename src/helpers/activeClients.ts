@@ -1,6 +1,6 @@
 import type express from 'express';
 import admin from 'firebase-admin';
-import { notificationLogger } from '../utils/logger';
+import { notificationLogger } from '@/utils/logger';
 
 /**
  * Firebase Service Account Configuration Interface

@@ -5,7 +5,7 @@
  * Provides fallback to process.env for backward compatibility
  */
 
-import type { LibraryConfig } from '../types/config';
+import type { LibraryConfig } from '@/types/config';
 
 /**
  * Internal configuration holder

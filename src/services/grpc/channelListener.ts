@@ -6,7 +6,7 @@
 
 import { parseResponse } from './utils';
 import type { ChannelMessage } from '../../types/api';
-import { grpcLogger } from '../../utils/logger';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Listen to a gRPC channel with streaming

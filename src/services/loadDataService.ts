@@ -5,7 +5,7 @@
  */
 
 import type { Knex } from 'knex';
-import { apiLogger } from '../utils/logger';
+import { apiLogger } from '@/utils/logger';
 
 /**
  * Parameters for loading data

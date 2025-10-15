@@ -6,9 +6,9 @@
  */
 
 import type { Knex } from 'knex';
-import type { MtddMeta } from '../../types/mtdd';
-import { mtddLogger } from '../../utils/logger';
-import { config } from '../../config/configHolder';
+import type { MtddMeta } from '@/types/mtdd';
+import { mtddLogger } from '@/utils/logger';
+import { config } from '@/config/configHolder';
 
 /**
  * Development MTDD Stubs - No-op implementation for development environment

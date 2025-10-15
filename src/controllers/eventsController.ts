@@ -7,11 +7,11 @@
 import type { Response } from 'express';
 import type { Knex } from 'knex';
 import { decodeAccessToken } from '@advcomm/utils/dist/helper/authenticationHelper';
-import type { AuthenticatedRequest, ChannelMessage } from '../types/api';
-import ActiveClients from '../helpers/activeClients';
-import { BackendClient } from '../services/grpcClient';
-import { apiLogger, notificationLogger } from '../utils/logger';
-import { config } from '../config/configHolder';
+import type { AuthenticatedRequest, ChannelMessage } from '@/types/api';
+import ActiveClients from '@/helpers/activeClients';
+import { BackendClient } from '@/services/grpcClient';
+import { apiLogger, notificationLogger } from '@/utils/logger';
+import { config } from '@/config/configHolder';
 
 /**
  * Events Controller for SSE endpoints

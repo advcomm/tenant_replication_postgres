@@ -4,7 +4,7 @@
  * Helper functions for query parameter processing and conversion
  */
 
-import { grpcLogger } from '../../utils/logger';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Check if query contains named parameters (e.g., ${id}, ${status})

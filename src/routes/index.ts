@@ -6,12 +6,12 @@
 
 import { Router } from 'express';
 import type { Knex } from 'knex';
-import { LoadDataController } from '../controllers/loadDataController';
-import { EventsController } from '../controllers/eventsController';
-import { validateQuery, schemas } from '../middleware/validation';
-import { asyncHandler } from '../middleware/errorHandler';
-import { apiLogger } from '../utils/logger';
-import { db as knexHelperDb } from '../helpers/knexHelper';
+import { LoadDataController } from '@/controllers/loadDataController';
+import { EventsController } from '@/controllers/eventsController';
+import { validateQuery, schemas } from '@/middleware/validation';
+import { asyncHandler } from '@/middleware/errorHandler';
+import { apiLogger } from '@/utils/logger';
+import { db as knexHelperDb } from '@/helpers/knexHelper';
 
 /**
  * Create and configure MTDD routes

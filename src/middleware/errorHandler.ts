@@ -5,11 +5,11 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { apiLogger } from '../utils/logger';
-import { BaseError } from '../errors/BaseError';
-import { GrpcError } from '../errors/GrpcError';
-import { MtddError } from '../errors/MtddError';
-import { ValidationError } from '../errors/ValidationError';
+import { apiLogger } from '@/utils/logger';
+import { BaseError } from '@/errors/BaseError';
+import { GrpcError } from '@/errors/GrpcError';
+import { MtddError } from '@/errors/MtddError';
+import { ValidationError } from '@/errors/ValidationError';
 
 /**
  * Standard error response format

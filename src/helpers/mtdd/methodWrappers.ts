@@ -4,7 +4,7 @@
  * Helper functions to create method wrappers that preserve MTDD metadata
  */
 
-import type { MtddMeta } from '../../types/mtdd';
+import type { MtddMeta } from '@/types/mtdd';
 
 /**
  * Helper function to create a method wrapper that preserves MTDD metadata

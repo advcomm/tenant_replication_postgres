@@ -4,7 +4,7 @@
  * Main interface for communicating with gRPC backend servers
  */
 
-import type { ChannelMessage } from '../types/api';
+import type { ChannelMessage } from '@/types/api';
 import {
 	IS_SINGLE_SERVER_DEPLOYMENT,
 	addTenantShard,
@@ -20,7 +20,7 @@ import {
 	lookupClient,
 	processQueryParameters,
 } from './grpc';
-import { grpcLogger } from '../utils/logger';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Main Backend Client Class

@@ -1,18 +1,18 @@
 import type { Application } from 'express';
 import type knex from 'knex';
-import * as knexHelper from './helpers/knexHelper';
-import { createMtddRoutes } from './routes';
-import type { LibraryConfig } from './types/config';
-import { setConfig } from './config/configHolder';
+import * as knexHelper from '@/helpers/knexHelper';
+import { createMtddRoutes } from '@/routes';
+import type { LibraryConfig } from '@/types/config';
+import { setConfig } from '@/config/configHolder';
 
 // Export Firebase configuration interface and ActiveClients class for users of this library
 export {
 	default as ActiveClients,
 	FirebaseConfig,
-} from './helpers/activeClients';
+} from '@/helpers/activeClients';
 
 // Export configuration types for consumers
-export type { LibraryConfig, DatabaseConfig, MtddBackendConfig, PortalConfig } from './types/config';
+export type { LibraryConfig, DatabaseConfig, MtddBackendConfig, PortalConfig } from '@/types/config';
 
 /**
  * Initialize tenant replication with MTDD support

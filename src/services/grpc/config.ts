@@ -10,10 +10,10 @@ import {
 	SSL_TARGET_OVERRIDE,
 	DEFAULT_AUTHORITY,
 	GRPC_MAX_MESSAGE_SIZE,
-} from '../../constants/grpc';
-import type { GrpcConnectionOptions } from '../../types/grpc';
-import { grpcLogger } from '../../utils/logger';
-import { config } from '../../config/configHolder';
+} from '@/constants/grpc';
+import type { GrpcConnectionOptions } from '@/types/grpc';
+import { grpcLogger } from '@/utils/logger';
+import { config } from '@/config/configHolder';
 
 // Backend servers configuration from config holder
 export const backendServers = config.backendServers;

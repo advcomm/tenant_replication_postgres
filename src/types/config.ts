@@ -5,7 +5,7 @@
  * (Future: Will replace process.env usage - see LIBRARY_DESIGN_DECISIONS.md)
  */
 
-import type { FirebaseConfig } from '../helpers/activeClients';
+import type { FirebaseConfig } from '@/helpers/activeClients';
 
 /**
  * Database Configuration

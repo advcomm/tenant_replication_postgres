@@ -5,14 +5,14 @@
  */
 
 import type { Knex } from 'knex';
-import type { MtddMeta, SqlResult } from '../../types/mtdd';
+import type { MtddMeta, SqlResult } from '@/types/mtdd';
 import {
 	createMtddMethodWrapper,
 	createReRunMethodWrapper,
 } from './methodWrappers';
 import { grpcMtddHandler } from './grpcHandler';
-import { mtddLogger } from '../../utils/logger';
-import { config } from '../../config/configHolder';
+import { mtddLogger } from '@/utils/logger';
+import { config } from '@/config/configHolder';
 
 // Global custom MTDD handler - can be set by users
 let customMtddHandler:

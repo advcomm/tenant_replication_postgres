@@ -1,13 +1,13 @@
 import { type Knex, knex } from 'knex';
-import type { MtddMeta, SqlResult } from '../types/mtdd';
+import type { MtddMeta, SqlResult } from '@/types/mtdd';
 import {
 	enableMtddRouting,
 	enableDevelopmentMtddStubs,
 	setCustomMtddHandler,
 	getCustomMtddHandler,
 } from './mtdd';
-import { dbLogger } from '../utils/logger';
-import { config } from '../config/configHolder';
+import { dbLogger } from '@/utils/logger';
+import { config } from '@/config/configHolder';
 
 // Create database connection using centralized configuration
 function createDatabaseConnection(): Knex {
