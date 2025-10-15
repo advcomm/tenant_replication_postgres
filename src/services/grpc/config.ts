@@ -1,7 +1,7 @@
 /**
  * gRPC Configuration
  *
- * Client setup and connection configuration for gRPC services
+ * Client setup and connection configuration for gRPC query servers
  */
 
 import * as grpc from '@grpc/grpc-js';
@@ -15,17 +15,17 @@ import type { GrpcConnectionOptions } from '@/types/grpc';
 import { grpcLogger } from '@/utils/logger';
 import { config } from '@/config/configHolder';
 
-// Backend servers configuration from config holder
-export const backendServers = config.backendServers;
+// gRPC query servers configuration from config holder
+export const queryServers = config.queryServers;
 
 // Single server deployment detection
-export const IS_SINGLE_SERVER_DEPLOYMENT = backendServers.length === 1;
+export const IS_SINGLE_SERVER_DEPLOYMENT = queryServers.length === 1;
 
 // Log configuration in non-development mode
 if (!config.isDevelopment) {
 	grpcLogger.info(
-		{ serverCount: backendServers.length, servers: backendServers },
-		'Backend servers configuration loaded',
+		{ serverCount: queryServers.length, servers: queryServers },
+		'gRPC query servers configuration loaded',
 	);
 	grpcLogger.info(
 		{
@@ -38,7 +38,7 @@ if (!config.isDevelopment) {
 	);
 
 	if (IS_SINGLE_SERVER_DEPLOYMENT) {
-		grpcLogger.info('Single server detected - using simplified routing');
+		grpcLogger.info('Single query server detected - using simplified routing');
 	}
 }
 

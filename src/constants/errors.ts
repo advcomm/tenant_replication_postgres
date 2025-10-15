@@ -15,11 +15,11 @@ export const ERROR_FIREBASE_CONFIG_ENV_INVALID =
 	'Invalid Firebase config in environment variable.';
 
 // gRPC Errors
-export const ERROR_NO_BACKEND_SERVERS = 'No backend servers available.';
-export const ERROR_NO_BACKEND_CONFIG =
-	'No backend servers configured. Please set BACKEND_SERVERS environment variable.';
+export const ERROR_NO_QUERY_SERVERS = 'No gRPC query servers available.';
+export const ERROR_NO_QUERY_SERVERS_CONFIG =
+	'No gRPC query servers configured. Please provide queryServers in configuration or set QUERY_SERVERS environment variable.';
 export const ERROR_NO_LOOKUP_SERVER =
-	'No lookup server configured. Please set LOOKUP_SERVER environment variable.';
+	'No lookup server configured. Please provide lookupServer in configuration or set LOOKUP_SERVER environment variable.';
 export const ERROR_INVALID_SHARD_INDEX = 'Invalid shard index';
 export const ERROR_INVALID_SHARD_RESPONSE = 'Invalid shard response for tenant';
 export const ERROR_ALL_SERVERS_FAILED =

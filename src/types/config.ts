@@ -23,11 +23,12 @@ export interface DatabaseConfig {
 }
 
 /**
- * MTDD Backend Configuration
+ * MTDD Configuration
+ * Configuration for Multi-Tenant Database Deployment query routing
  */
 export interface MtddBackendConfig {
-	backendServers: string[];
-	lookupServer: string;
+	queryServers: string[]; // gRPC servers that execute SQL queries
+	lookupServer: string; // gRPC server for tenant shard lookup
 	isDevelopment?: boolean;
 }
 

@@ -8,7 +8,7 @@ import * as grpc from '@grpc/grpc-js';
 import {
 	createGrpcCredentials,
 	createGrpcConnectionOptions,
-	backendServers,
+	queryServers,
 } from './config';
 import { config } from '@/config/configHolder';
 
@@ -71,9 +71,9 @@ const LookupServiceClient = grpc.makeGenericClientConstructor(
 // Check for insecure mode
 const useInsecure = config.grpcInsecure;
 
-// Create client instances for all backend servers
+// Create client instances for all gRPC query servers
 // Note: clients typed as 'any[]' because gRPC client types are not exported by @grpc/grpc-js
-export const clients: any[] = backendServers.map((server) => {
+export const clients: any[] = queryServers.map((server) => {
 	if (!config.isDevelopment && !useInsecure) {
 		return new DBServiceClient(
 			`${server}`,

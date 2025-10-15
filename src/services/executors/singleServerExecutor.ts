@@ -7,7 +7,7 @@
 import { grpcLogger } from '@/utils/logger';
 import { processQueryParameters } from '@/services/grpc/queryUtils';
 import { convertBigIntToString } from '@/services/grpc/utils';
-import { backendServers } from '@/services/grpc/config';
+import { queryServers } from '@/services/grpc/config';
 import { clients } from '@/services/grpc/clientSetup';
 
 /**
@@ -19,8 +19,8 @@ export async function executeSingleServer(
 	valuesOrBindings: Record<string, any> | any[] = {},
 ): Promise<unknown> {
 	grpcLogger.debug(
-		{ server: backendServers[0] },
-		'Simplified routing - executing on single server',
+		{ server: queryServers[0] },
+		'Simplified routing - executing on single query server',
 	);
 
 	const { query: processedQuery, params } = processQueryParameters(
@@ -37,8 +37,8 @@ export async function executeSingleServer(
 
 	try {
 		grpcLogger.debug(
-			{ server: backendServers[0] },
-			'Executing query directly on single server',
+			{ server: queryServers[0] },
+			'Executing query directly on single query server',
 		);
 		const selectedClient = clients[0];
 

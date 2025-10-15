@@ -7,13 +7,13 @@
 /**
  * Default gRPC server addresses (fallback values)
  */
-export const DEFAULT_BACKEND_SERVERS = ['192.168.0.87', '192.168.0.2'];
+export const DEFAULT_QUERY_SERVERS = ['192.168.0.87', '192.168.0.2'];
 export const DEFAULT_LOOKUP_SERVER = '127.0.0.1';
 
 /**
  * gRPC ports
  */
-export const GRPC_BACKEND_PORT = 50051;
+export const GRPC_QUERY_SERVER_PORT = 50051;
 export const GRPC_LOOKUP_PORT = 50054;
 
 /**

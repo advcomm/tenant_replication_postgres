@@ -5,7 +5,7 @@
  */
 
 import type { MtddMeta, SqlResult } from '@/types/mtdd';
-import { BackendClient } from '@/services/grpcClient';
+import { GrpcQueryClient } from '@/services/grpcClient';
 import { mtddLogger } from '@/utils/logger';
 import { config } from '@/config/configHolder';
 
@@ -18,10 +18,10 @@ export async function grpcMtddHandler(
 	queryObject: unknown,
 	sqlResult: SqlResult,
 ): Promise<unknown> {
-	mtddLogger.debug('Processing query via gRPC backend');
+	mtddLogger.debug('Processing query via gRPC query servers');
 
 	// Single server deployment detection
-	const serverList = config.backendServers;
+	const serverList = config.queryServers;
 	const isSingleServer = serverList.length === 1;
 
 	if (isSingleServer) {
@@ -45,7 +45,7 @@ export async function grpcMtddHandler(
 				mtddLogger.debug(
 					'Executing on single server (acting as "all servers")',
 				);
-				result = await BackendClient.executeQueryAll(
+				result = await GrpcQueryClient.executeQueryAll(
 					sqlResult.sql,
 					sqlResult.bindings || [],
 				);
@@ -56,7 +56,7 @@ export async function grpcMtddHandler(
 				);
 				const tenantNameStr =
 					typeof tenantName === 'string' ? tenantName : String(tenantName);
-				result = await BackendClient.executeQuery(
+				result = await GrpcQueryClient.executeQuery(
 					sqlResult.sql,
 					sqlResult.bindings || [],
 					tenantNameStr,
@@ -134,7 +134,7 @@ export async function grpcMtddHandler(
 				);
 				try {
 					// Add tenant shard mapping first
-					await BackendClient.addTenantShard(tenantNameStr, tenantTypeToUse);
+					await GrpcQueryClient.addTenantShard(tenantNameStr, tenantTypeToUse);
 					mtddLogger.info(
 						{ tenant: tenantNameStr, tenantType: tenantTypeToUse },
 						'Tenant shard mapping added',
@@ -155,7 +155,7 @@ export async function grpcMtddHandler(
 				{ tenant: tenantNameStr },
 				'Executing query on specific shard',
 			);
-			result = await BackendClient.executeQuery(
+			result = await GrpcQueryClient.executeQuery(
 				sqlResult.sql,
 				sqlResult.bindings || [],
 				tenantNameStr,
@@ -163,7 +163,7 @@ export async function grpcMtddHandler(
 		} else {
 			// Execute query on all servers when no tenant specified or allServers flag is set
 			mtddLogger.debug('Executing query on all servers (chain end execution)');
-			result = await BackendClient.executeQueryAll(
+			result = await GrpcQueryClient.executeQueryAll(
 				sqlResult.sql,
 				sqlResult.bindings || [],
 			);

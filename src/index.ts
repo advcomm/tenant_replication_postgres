@@ -32,7 +32,7 @@ export type {
  *
  * await InitializeReplication(app, db, {
  *   mtdd: {
- *     backendServers: ['server1:50051', 'server2:50051'],
+ *     queryServers: ['query-server1:50051', 'query-server2:50051'],
  *     lookupServer: 'lookup:50054',
  *     isDevelopment: false
  *   },

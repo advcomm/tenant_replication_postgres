@@ -8,7 +8,7 @@ export { listenToChannel } from './channelListener';
 export { clients, lookupClient } from './clientSetup';
 export {
 	IS_SINGLE_SERVER_DEPLOYMENT,
-	backendServers,
+	queryServers,
 	createGrpcConnectionOptions,
 	createGrpcCredentials,
 } from './config';

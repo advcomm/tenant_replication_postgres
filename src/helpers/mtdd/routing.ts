@@ -25,7 +25,7 @@ let customMtddHandler:
  */
 export function enableMtddRouting(knexInstance: Knex): void {
 	// Single server deployment detection
-	const serverList = config.backendServers;
+	const serverList = config.queryServers;
 	const isSingleServer = serverList.length === 1;
 
 	if (isSingleServer) {

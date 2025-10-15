@@ -1,7 +1,7 @@
 /**
- * gRPC Backend Client
+ * gRPC Query Client
  *
- * Main interface for communicating with gRPC backend servers
+ * Main interface for executing SQL queries via gRPC query servers
  */
 
 import type { ChannelMessage } from '@/types/api';
@@ -18,11 +18,11 @@ import {
 } from './executors/multiServerExecutor';
 
 /**
- * Main Backend Client Class
+ * gRPC Query Client
  *
- * Provides methods for executing queries and managing tenant shards via gRPC
+ * Provides methods for executing SQL queries and managing tenant shards via gRPC
  */
-export class BackendClient {
+export class GrpcQueryClient {
 	/**
 	 * @deprecated Use executeQuery instead
 	 */
@@ -155,10 +155,10 @@ export class BackendClient {
 	}
 
 	/**
-	 * Initialize the backend client (for future use)
+	 * Initialize the gRPC query client (for future use)
 	 */
 	static initialize(config: unknown): void {
-		grpcLogger.info({ config }, 'Backend client initialization requested');
+		grpcLogger.info({ config }, 'gRPC query client initialization requested');
 		// Future: Allow dynamic configuration
 	}
 }

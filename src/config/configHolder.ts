@@ -63,15 +63,17 @@ export const config = {
 		return process.env.NODE_ENV === 'development';
 	},
 
-	get backendServers(): string[] {
+	get queryServers(): string[] {
 		const cfg = getConfig();
-		if (cfg?.mtdd?.backendServers) {
-			return cfg.mtdd.backendServers;
+		if (cfg?.mtdd?.queryServers) {
+			return cfg.mtdd.queryServers;
 		}
 		warnAboutEnvFallback();
+		// Support old BACKEND_SERVERS env var for backward compatibility
+		const envVar = process.env.QUERY_SERVERS || process.env.BACKEND_SERVERS;
 		return process.env.NODE_ENV !== 'development'
-			? JSON.parse(process.env.BACKEND_SERVERS || '[]')
-			: JSON.parse(process.env.BACKEND_SERVERS || '["127.0.0.1"]');
+			? JSON.parse(envVar || '[]')
+			: JSON.parse(envVar || '["127.0.0.1"]');
 	},
 
 	get lookupServer(): string {

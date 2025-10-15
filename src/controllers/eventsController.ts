@@ -9,7 +9,7 @@ import type { Knex } from 'knex';
 import { decodeAccessToken } from '@advcomm/utils/dist/helper/authenticationHelper';
 import type { AuthenticatedRequest, ChannelMessage } from '@/types/api';
 import ActiveClients from '@/helpers/clients';
-import { BackendClient } from '@/services/grpcClient';
+import { GrpcQueryClient } from '@/services/grpcClient';
 import { apiLogger, notificationLogger } from '@/utils/logger';
 import { config } from '@/config/configHolder';
 
@@ -157,7 +157,7 @@ export class EventsController {
 	setupChannelListeners(): void {
 		// Listen to this channel (table_changes) by default
 		if (!config.isDevelopment) {
-			BackendClient.ListenToChannel(
+			GrpcQueryClient.ListenToChannel(
 				'table_changes',
 				this.listenChannel.bind(this),
 			);
