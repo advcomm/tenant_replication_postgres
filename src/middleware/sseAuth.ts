@@ -24,7 +24,7 @@ export async function authenticateSSE(
 	next: NextFunction,
 ): Promise<void> {
 	try {
-		let authToken = req.headers['authorization'];
+		let authToken = req.headers.authorization;
 
 		// Check if authorization is provided in query parameters (for SSE compatibility)
 		if (!authToken && req.query.token) {
@@ -32,7 +32,7 @@ export async function authenticateSSE(
 			authToken = `Bearer ${req.query.token}`;
 
 			// Add authorization to headers for processing
-			req.headers['authorization'] = authToken;
+			req.headers.authorization = authToken;
 			apiLogger.debug(
 				'Using authorization from query parameter for SSE endpoint',
 			);
@@ -84,4 +84,3 @@ export async function authenticateSSE(
 		});
 	}
 }
-

@@ -21,4 +21,3 @@ export interface FirebaseConfig {
 	client_x509_cert_url?: string;
 	universe_domain?: string;
 }
-

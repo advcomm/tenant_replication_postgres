@@ -142,4 +142,3 @@ export const RE_RUN_METHODS = new Set([
  * Promise chain-ending methods that trigger query execution
  */
 export const CHAIN_END_METHODS = ['then', 'catch', 'finally', 'stream', 'pipe'];
-

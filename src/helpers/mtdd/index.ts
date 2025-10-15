@@ -16,3 +16,8 @@ export {
 	setCustomMtddHandler,
 	getCustomMtddHandler,
 } from './actions/performMtddActions';
+export {
+	createMtddMethod,
+	createMtddMetadata,
+	setupToSQLTracking,
+} from './mtddMethod';

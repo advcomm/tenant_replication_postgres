@@ -33,12 +33,12 @@ export async function callProcedure(
 	tenantId?: string,
 ): Promise<unknown> {
 	grpcLogger.warn('callProcedure is deprecated. Use executeQuery instead.');
-	
+
 	// Convert to executeQuery format
-	const query = isFunction 
+	const query = isFunction
 		? `SELECT * FROM ${procedureName}(${params.map((_, i) => `$${i + 1}`).join(', ')})`
 		: `CALL ${procedureName}(${params.map((_, i) => `$${i + 1}`).join(', ')})`;
-	
+
 	return executeQuery(query, params, tenantId);
 }
 
@@ -90,9 +90,7 @@ export async function executeQueryAll(
 ): Promise<unknown[]> {
 	// Single server optimization
 	if (IS_SINGLE_SERVER_DEPLOYMENT) {
-		grpcLogger.debug(
-			'executeQueryAll - using single server result',
-		);
+		grpcLogger.debug('executeQueryAll - using single server result');
 		const singleResult = await executeQuery(query, valuesOrBindings);
 		return [singleResult];
 	}
@@ -110,9 +108,7 @@ export async function executeQueryAllSettled(
 ): Promise<PromiseSettledResult<unknown>[]> {
 	// Single server optimization
 	if (IS_SINGLE_SERVER_DEPLOYMENT) {
-		grpcLogger.debug(
-			'executeQueryAllSettled - using single server result',
-		);
+		grpcLogger.debug('executeQueryAllSettled - using single server result');
 		try {
 			const result = await executeQuery(query, valuesOrBindings);
 			return [{ status: 'fulfilled', value: result }];
@@ -178,4 +174,3 @@ export const GrpcQueryClient = {
 	ListenToChannel: listenToChannel,
 	initialize: initializeGrpcClient,
 };
-

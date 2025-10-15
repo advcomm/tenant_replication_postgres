@@ -7,8 +7,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { apiLogger } from '@/utils/logger';
 import { BaseError } from '@/errors/BaseError';
-import { GrpcError } from '@/errors/GrpcError';
-import { MtddError } from '@/errors/MtddError';
 import { ValidationError } from '@/errors/ValidationError';
 
 /**
@@ -43,7 +41,8 @@ export function errorHandler(
 ): void {
 	// Skip if response already sent
 	if (res.headersSent) {
-		return next(error);
+		next(error);
+		return;
 	}
 
 	// Handle custom errors
@@ -174,7 +173,7 @@ export function notFoundHandler(
  * ```
  */
 export function asyncHandler(
-	fn: (req: Request, res: Response, next: NextFunction) => Promise<void | any>,
+	fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>,
 ) {
 	return (req: Request, res: Response, next: NextFunction): void => {
 		Promise.resolve(fn(req, res, next)).catch(next);

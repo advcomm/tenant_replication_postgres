@@ -21,7 +21,8 @@
 		"format:fix": "biome format --write .",
 		"check": "biome check .",
 		"check:fix": "biome check --write .",
-		"check:unsafe": "biome check --write --unsafe ."
+		"check:unsafe": "biome check --write --unsafe .",
+		"prepare": "husky"
 	},
 	"keywords": [
 		"multi-tenant",
@@ -56,10 +57,18 @@
 		"@types/express": "^4.17.21",
 		"@types/node": "^22.13.9",
 		"env-cmd": "^11.0.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.4",
 		"nodemon": "^3.1.9",
 		"pino-pretty": "^13.1.2",
 		"ts-node": "^10.9.2",
 		"tsconfig-paths": "^4.2.0",
 		"typescript": "^5.8.2"
+	},
+	"lint-staged": {
+		"*.{ts,js,json}": [
+			"biome format --write",
+			"biome lint --write"
+		]
 	}
 }

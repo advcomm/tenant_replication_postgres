@@ -6,17 +6,17 @@
 
 import { mtddLogger } from '@/utils/logger';
 import { performMtddAutoActions } from '../actions/performMtddActions';
+import type { KnexQueryObject } from '@/types';
 
 /**
  * Setup chain-end detection for MTDD queries
- * 
+ *
  * Patches methods like .then(), .catch(), .finally(), .stream(), .pipe()
  * to automatically execute queries via gRPC when the promise chain ends
- * 
- * @param queryObject - Knex query object (typed as any for dynamic patching)
+ *
+ * @param queryObject - Knex query object
  */
-export function setupChainEndDetection(queryObject: any): void {
-	// any required for dynamic method patching
+export function setupChainEndDetection(queryObject: KnexQueryObject): void {
 	const chainEndMethods = ['then', 'catch', 'finally', 'stream', 'pipe'];
 
 	chainEndMethods.forEach((endMethod) => {
@@ -26,6 +26,7 @@ export function setupChainEndDetection(queryObject: any): void {
 		) {
 			const originalEndMethod = queryObject[endMethod];
 
+			// biome-ignore lint/suspicious/noExplicitAny: Required to preserve chain-end method signatures
 			queryObject[endMethod] = function (...endArgs: any[]) {
 				// Chain is ending - auto-append toSQL() if not already called
 				if (queryObject._mtddMeta && !queryObject._toSQLCalled) {
@@ -96,13 +97,15 @@ export function setupChainEndDetection(queryObject: any): void {
 							});
 						} else if (endMethod === 'stream' || endMethod === 'pipe') {
 							// For stream operations, execute via gRPC and create a readable stream
-							const { Readable } = require('stream');
+							const { Readable } = require('node:stream');
 							const readable = new Readable({ objectMode: true });
 
 							executeViaGrpc()
 								.then((result) => {
 									if (Array.isArray(result)) {
-										result.forEach((row) => readable.push(row));
+										result.forEach((row) => {
+											readable.push(row);
+										});
 									} else {
 										readable.push(result);
 									}
@@ -150,4 +153,3 @@ export function setupChainEndDetection(queryObject: any): void {
 		}
 	});
 }
-

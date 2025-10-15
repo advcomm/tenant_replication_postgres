@@ -1,0 +1,3 @@
+# Run build to ensure no TypeScript errors before push
+echo "Running build check before push..."
+npm run build

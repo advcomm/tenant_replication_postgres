@@ -59,4 +59,3 @@ export class EventsController {
 		this.notificationService.setupChannelListeners();
 	}
 }
-

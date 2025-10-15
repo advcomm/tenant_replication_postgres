@@ -70,4 +70,3 @@ export function hasMobileDevice(deviceId: string): boolean {
 export function getMobileDeviceCount(): number {
 	return mobileClients.size;
 }
-

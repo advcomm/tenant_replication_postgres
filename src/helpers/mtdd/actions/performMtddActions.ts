@@ -4,7 +4,7 @@
  * Performs special MTDD actions when toSQL() is auto-appended
  */
 
-import type { MtddMeta, SqlResult } from '@/types/mtdd';
+import type { MtddMeta, SqlResult, KnexQueryObject } from '@/types';
 import { mtddLogger } from '@/utils/logger';
 import { grpcMtddHandler } from '../grpcHandler';
 
@@ -12,16 +12,16 @@ import { grpcMtddHandler } from '../grpcHandler';
  * Perform special MTDD actions when toSQL() is auto-appended at chain end
  * Handles caching, auditing, routing, and other MTDD features
  *
- * @param queryObject - Knex query object (typed as any for dynamic access)
+ * @param queryObject - Knex query object
  * @param sqlResult - SQL result with MTDD metadata
  * @returns Query result from gRPC execution
  */
 export async function performMtddAutoActions(
-	queryObject: any,
+	queryObject: KnexQueryObject,
 	sqlResult: SqlResult,
 ): Promise<unknown> {
 	const mtddMeta = sqlResult.options?.mtdd;
-  
+
 	if (!mtddMeta) return [];
 
 	// Only perform actions if toSQL was auto-appended (not manually called)
@@ -169,7 +169,7 @@ let customMtddHandler:
 
 /**
  * Set a custom handler to intercept MTDD metadata
- * 
+ *
  * This allows you to implement your own business logic for auto-appended queries
  *
  * @param handler - Function to handle MTDD metadata when toSQL() is auto-appended
@@ -190,4 +190,3 @@ export function getCustomMtddHandler():
 	| null {
 	return customMtddHandler;
 }
-

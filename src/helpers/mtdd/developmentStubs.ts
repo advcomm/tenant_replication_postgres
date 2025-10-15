@@ -27,11 +27,12 @@ export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
 
 		if (!qbProto.mtdd) {
 			// Simple no-op implementation for QueryBuilder
+			// biome-ignore lint/suspicious/noExplicitAny: Required for development stub compatibility with production
 			qbProto.mtdd = function (
 				tenantIdOrMeta?: string | number | MtddMeta,
 				tenantType?: number | string | null | undefined,
 				methodType?: 'addTenantShard' | 'executeQuery' | 'auto',
-				options: Partial<
+				_options: Partial<
 					Omit<MtddMeta, 'tenantId' | 'tenantType' | 'methodType'>
 				> = {},
 			): any {
@@ -64,11 +65,12 @@ export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
 
 		if (!rawProto.mtdd) {
 			// Simple no-op implementation for Raw queries
+			// biome-ignore lint/suspicious/noExplicitAny: Required for development stub compatibility with production
 			rawProto.mtdd = function (
 				tenantIdOrMeta?: string | number | MtddMeta,
 				tenantType?: number | string | null | undefined,
 				methodType?: 'addTenantShard' | 'executeQuery' | 'auto',
-				options: Partial<
+				_options: Partial<
 					Omit<MtddMeta, 'tenantId' | 'tenantType' | 'methodType'>
 				> = {},
 			): any {

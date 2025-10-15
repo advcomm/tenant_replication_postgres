@@ -49,10 +49,7 @@ import {
 	addMobileDevice,
 	deleteMobileDevice,
 } from './mobileClients';
-import {
-	sendPushNotification,
-	type PushMessage,
-} from './pushNotifications';
+import { sendPushNotification, type PushMessage } from './pushNotifications';
 import type { FirebaseConfig } from './types';
 
 // Re-export types
@@ -162,4 +159,3 @@ const ActiveClients = {
 };
 
 export default ActiveClients;
-

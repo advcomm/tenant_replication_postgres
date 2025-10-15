@@ -20,7 +20,7 @@ import { config } from '@/config/configHolder';
  */
 export async function handleSingleServer(
 	meta: MtddMeta,
-	queryObject: unknown,
+	_queryObject: unknown,
 	sqlResult: SqlResult,
 ): Promise<unknown> {
 	const serverList = config.queryServers;
@@ -40,11 +40,9 @@ export async function handleSingleServer(
 		const tenantName = meta.tenantId || meta.tenantName;
 		const executeOnAllServers = meta.allServers === true || !tenantName;
 
-		let result;
+		let result: unknown;
 		if (executeOnAllServers) {
-			mtddLogger.debug(
-				'Executing on single server (acting as "all servers")',
-			);
+			mtddLogger.debug('Executing on single server (acting as "all servers")');
 			result = await GrpcQueryClient.executeQueryAll(
 				sqlResult.sql,
 				sqlResult.bindings || [],
@@ -75,4 +73,3 @@ export async function handleSingleServer(
 		throw error;
 	}
 }
-

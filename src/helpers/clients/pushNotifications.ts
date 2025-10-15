@@ -7,7 +7,11 @@
 import admin from 'firebase-admin';
 import { notificationLogger } from '@/utils/logger';
 import { getFirebaseInstance } from './firebaseClient';
-import { getMobileDeviceCount, getMobileFcmToken, getMobileClients } from './mobileClients';
+import {
+	getMobileDeviceCount,
+	getMobileFcmToken,
+	getMobileClients,
+} from './mobileClients';
 
 /**
  * Push message structure
@@ -22,7 +26,10 @@ export interface PushMessage {
  * @param fcmToken - Firebase Cloud Messaging token
  * @param message - Notification message with title and body
  */
-export function sendPushNotification(fcmToken: string, message: PushMessage): void {
+export function sendPushNotification(
+	fcmToken: string,
+	message: PushMessage,
+): void {
 	const firebase = getFirebaseInstance();
 
 	if (!firebase) {
@@ -60,7 +67,10 @@ export function sendPushNotification(fcmToken: string, message: PushMessage): vo
  * @param deviceId - Device identifier
  * @param message - Notification message
  */
-export function sendPushNotificationToDevice(deviceId: string, message: PushMessage): void {
+export function sendPushNotificationToDevice(
+	deviceId: string,
+	message: PushMessage,
+): void {
 	const fcmToken = getMobileFcmToken(deviceId);
 
 	if (!fcmToken) {
@@ -81,7 +91,7 @@ export function sendPushNotificationToDevice(deviceId: string, message: PushMess
 export function broadcastPushNotification(message: PushMessage): void {
 	const clients = getMobileClients();
 
-	for (const [deviceId, fcmToken] of clients.entries()) {
+	for (const [_deviceId, fcmToken] of clients.entries()) {
 		sendPushNotification(fcmToken, message);
 	}
 
@@ -90,4 +100,3 @@ export function broadcastPushNotification(message: PushMessage): void {
 		'Push notification broadcast sent',
 	);
 }
-

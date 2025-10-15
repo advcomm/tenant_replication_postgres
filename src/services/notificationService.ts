@@ -32,20 +32,17 @@ export class NotificationService {
 		const { table, action, data } = !config.isDevelopment
 			? JSON.parse(JSON.parse(msg.payload))
 			: JSON.parse(msg.payload);
-		
+
 		const dataTenantID =
-			data[this.portalInfo?.TenantColumnName as string ?? ''] || data.TenantID;
+			data[(this.portalInfo?.TenantColumnName as string) ?? ''] ||
+			data.TenantID;
 
 		// TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
-		const result = await this.db
+		await this.db
 			.raw('SELECT EntityName FROM tblEntities WHERE entityid = ?', [
 				dataTenantID,
 			])
 			.mtdd();
-
-		// Get Redis keys based on Foreign Key (e.g., VendorID)
-		const vendorId = data.tenantid; // Adjust based on your schema
-		const redisKey = `${table.toLowerCase()}:${this.portalInfo.TenantColumnName}:${result.rows[0].entityname}`;
 
 		// Log the notification
 		notificationLogger.info(
@@ -62,7 +59,7 @@ export class NotificationService {
 	 * @param payload - Message payload to send
 	 */
 	private broadcastToWebClients(payload: string): void {
-		for (const [deviceId, deviceEvents] of ActiveClients.web.entries()) {
+		for (const [_deviceId, deviceEvents] of ActiveClients.web.entries()) {
 			const res = deviceEvents.get('events');
 			if (res && !res.writableEnded) {
 				res.write(`data: ${payload}\n\n`);
@@ -100,4 +97,3 @@ export class NotificationService {
 		}
 	}
 }
-

@@ -45,7 +45,7 @@ export type {
  */
 export async function InitializeReplication(
 	app: Application,
-	dbConnection: knex.Knex<any, unknown[]>,
+	dbConnection: knex.Knex<Record<string, unknown>, unknown[]>,
 	config?: LibraryConfig,
 ) {
 	// Store configuration for use throughout the library
@@ -58,4 +58,3 @@ export async function InitializeReplication(
 }
 
 export default knexHelper;
-// Test comment

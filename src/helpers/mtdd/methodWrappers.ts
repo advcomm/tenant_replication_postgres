@@ -4,16 +4,17 @@
  * Helper functions to create method wrappers that preserve MTDD metadata
  */
 
-import type { MtddMeta } from '@/types/mtdd';
-
 /**
  * Helper function to create a method wrapper that preserves MTDD metadata
  * This eliminates code duplication and makes the patching more maintainable
+ *
+ * Note: `any` types are required here for dynamic prototype patching
+ * - `this: any` - allows binding to any Knex prototype
+ * - `...args: any[]` - preserves any method signature
+ * - return `any` - maintains Knex's fluent interface
  */
-export function createMtddMethodWrapper(
-	originalMethod: Function,
-	methodName: string,
-) {
+export function createMtddMethodWrapper(originalMethod: Function) {
+	// biome-ignore lint/suspicious/noExplicitAny: Required for dynamic prototype patching
 	return function (this: any, ...args: any[]): any {
 		const result = originalMethod.apply(this, args);
 		// Preserve MTDD metadata across method calls
@@ -27,11 +28,14 @@ export function createMtddMethodWrapper(
 /**
  * Specialized wrapper for methods that trigger IsReRun=true
  * These are complex query methods that typically require re-execution or special handling
+ *
+ * Note: `any` types are required here for dynamic prototype patching (see createMtddMethodWrapper)
  */
 export function createReRunMethodWrapper(
 	originalMethod: Function,
 	methodName: string,
 ) {
+	// biome-ignore lint/suspicious/noExplicitAny: Required for dynamic prototype patching
 	return function (this: any, ...args: any[]): any {
 		const result = originalMethod.apply(this, args);
 

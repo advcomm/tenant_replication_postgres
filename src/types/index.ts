@@ -34,3 +34,11 @@ export type {
 } from './grpc';
 // MTDD (Multi-Tenant Database Deployment) types
 export type { MtddMeta, SqlResult } from './mtdd';
+// SQL query and parameter types
+export type {
+	SqlParameters,
+	SqlParameterValue,
+	KnexQueryObject,
+	GrpcClient,
+} from './sql';
+export { isKnexQueryObject } from './sql';

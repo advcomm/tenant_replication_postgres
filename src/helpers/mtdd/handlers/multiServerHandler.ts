@@ -19,7 +19,7 @@ import { mtddLogger } from '@/utils/logger';
  */
 export async function handleMultiServer(
 	meta: MtddMeta,
-	queryObject: unknown,
+	_queryObject: unknown,
 	sqlResult: SqlResult,
 ): Promise<unknown> {
 	const tenantName = meta.tenantId || meta.tenantName;
@@ -60,7 +60,7 @@ export async function handleMultiServer(
 			(meta.operationType === 'write' &&
 				meta.operation?.toLowerCase().includes('tenant'));
 
-		let result;
+		let result: unknown;
 
 		if (!executeOnAllServers && tenantName) {
 			// Determine tenant type to use
@@ -68,7 +68,7 @@ export async function handleMultiServer(
 			if (meta.tenantType !== undefined && meta.tenantType !== null) {
 				tenantTypeToUse =
 					typeof meta.tenantType === 'string'
-						? parseInt(meta.tenantType) || 1
+						? parseInt(meta.tenantType, 10) || 1
 						: meta.tenantType;
 			}
 
@@ -132,4 +132,3 @@ export async function handleMultiServer(
 		throw error;
 	}
 }
-

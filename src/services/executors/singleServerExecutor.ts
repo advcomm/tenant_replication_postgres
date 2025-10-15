@@ -9,6 +9,7 @@ import { processQueryParameters } from '@/services/grpc/queryUtils';
 import { convertBigIntToString } from '@/services/grpc/utils';
 import { queryServers } from '@/services/grpc/config';
 import { clients } from '@/services/grpc/clientSetup';
+import type { SqlParameters } from '@/types';
 
 /**
  * Execute query on single server
@@ -16,7 +17,7 @@ import { clients } from '@/services/grpc/clientSetup';
  */
 export async function executeSingleServer(
 	query: string,
-	valuesOrBindings: Record<string, any> | any[] = {},
+	valuesOrBindings: SqlParameters = {},
 ): Promise<unknown> {
 	grpcLogger.debug(
 		{ server: queryServers[0] },
@@ -72,4 +73,3 @@ export async function executeSingleServer(
 		throw error;
 	}
 }
-

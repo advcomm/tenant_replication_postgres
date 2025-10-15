@@ -38,4 +38,3 @@ export async function grpcMtddHandler(
 	// Multi-server MTDD routing
 	return handleMultiServer(meta, queryObject, sqlResult);
 }
-

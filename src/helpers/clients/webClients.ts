@@ -50,7 +50,10 @@ export function addWebDeviceEvent(
  * @param deviceId - Device identifier
  * @param eventName - Event channel name
  */
-export function deleteWebDeviceEvents(deviceId: string, eventName: string): void {
+export function deleteWebDeviceEvents(
+	deviceId: string,
+	eventName: string,
+): void {
 	const deviceEvents = webClients.get(deviceId);
 	if (deviceEvents) {
 		deviceEvents.delete(eventName);
@@ -75,7 +78,9 @@ export function deleteWebDevice(deviceId: string): void {
  * Get device event subscriptions
  * @param deviceId - Device identifier
  */
-export function getWebDeviceEvents(deviceId: string): Map<string, express.Response> | undefined {
+export function getWebDeviceEvents(
+	deviceId: string,
+): Map<string, express.Response> | undefined {
 	return webClients.get(deviceId);
 }
 
@@ -84,7 +89,9 @@ export function getWebDeviceEvents(deviceId: string): Map<string, express.Respon
  * @param deviceId - Device identifier
  * @param eventName - Event channel name
  */
-export function hasWebDeviceEvent(deviceId: string, eventName: string): boolean {
+export function hasWebDeviceEvent(
+	deviceId: string,
+	eventName: string,
+): boolean {
 	return webClients.get(deviceId)?.has(eventName) ?? false;
 }
-
