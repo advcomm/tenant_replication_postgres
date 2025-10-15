@@ -10,6 +10,7 @@ import { LoadDataController } from '@/controllers/loadDataController';
 import { EventsController } from '@/controllers/eventsController';
 import { validateQuery, schemas } from '@/middleware/validation';
 import { asyncHandler } from '@/middleware/errorHandler';
+import { authenticateSSE } from '@/middleware/sseAuth';
 import { apiLogger } from '@/utils/logger';
 import { db as knexHelperDb } from '@/helpers/knexHelper';
 
@@ -61,6 +62,7 @@ export function createMtddRoutes(dbConnection: Knex): Router {
 	 */
 	router.get(
 		'/events',
+		authenticateSSE,
 		asyncHandler((req, res) => eventsController.handleEvents(req, res)),
 	);
 
