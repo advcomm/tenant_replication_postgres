@@ -10,6 +10,7 @@ import { BackendClient } from '../services/grpcClient';
 import { apiLogger, notificationLogger } from '../utils/logger';
 import { config } from '../config/configHolder';
 import { LoadDataService, LoadDataValidationError } from '../services/loadDataService';
+import { validateQuery, schemas } from '../middleware/validation';
 
 export function createCoreRoutes(dbConnection: Knex): Router {
 	// Get portal configuration
@@ -120,41 +121,49 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 	//     res.json(response);
 	// });
 
-	router.get('/Load', async (req: AuthenticatedRequest, res: Response) => {
-		const TenantID = req.tid;
-		const sub = req.sub;
-		const roles = req.roles || [];
-		
-		try {
-			const { tableName, lastUpdated } = req.query;
-			const deviceId = (req.query?.deviceId || req.headers?.deviceid) as string;
+	router.get(
+		'/Load',
+		validateQuery(schemas.loadData),
+		async (req: AuthenticatedRequest, res: Response) => {
+			const TenantID = req.tid;
+			const sub = req.sub;
+			const roles = req.roles || [];
 
-			// Use the service to load data
-			const result = await loadDataService.loadData({
-				tableName: tableName as string,
-				lastUpdated: lastUpdated ? (lastUpdated as string | number) : undefined,
-				tenantId: TenantID,
-				userId: sub,
-				roles,
-				deviceId,
-			});
+			try {
+				// After validation, query is guaranteed to have the right shape
+				const { tableName, lastUpdated, deviceId } = req.query as unknown as {
+					tableName: string;
+					lastUpdated?: number;
+					deviceId?: string;
+				};
 
-			res.status(200).json(result.rows);
-		} catch (error: unknown) {
-			if (error instanceof LoadDataValidationError) {
-				res.status(400).json({ error: error.message });
-				return;
+				// Use the service to load data
+				const result = await loadDataService.loadData({
+					tableName,
+					lastUpdated,
+					tenantId: TenantID,
+					userId: sub,
+					roles,
+					deviceId: deviceId || (req.headers?.deviceid as string),
+				});
+
+				res.status(200).json(result.rows);
+			} catch (error: unknown) {
+				if (error instanceof LoadDataValidationError) {
+					res.status(400).json({ error: error.message });
+					return;
+				}
+
+				const errorMessage =
+					error instanceof Error ? error.message : 'Unknown error';
+				apiLogger.error({ error: errorMessage }, 'LoadData error');
+				res
+					.status(500)
+					.json({ message: 'LoadData request failed', error: errorMessage });
 			}
-
-			const errorMessage =
-				error instanceof Error ? error.message : 'Unknown error';
-			apiLogger.error({ error: errorMessage }, 'LoadData error');
-			res
-				.status(500)
-				.json({ message: 'LoadData request failed', error: errorMessage });
-		}
-		return;
-	});
+			return;
+		},
+	);
 
 	router.get('/events', async (req: AuthenticatedRequest, res: Response) => {
 		// Handle authorization within this endpoint
