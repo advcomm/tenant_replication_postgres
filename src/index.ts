@@ -1,7 +1,7 @@
 import type { Application } from 'express';
 import type knex from 'knex';
 import * as knexHelper from './helpers/knexHelper';
-import createCoreRoutes from './routes/router';
+import { createMtddRoutes } from './routes';
 import type { LibraryConfig } from './types/config';
 import { setConfig } from './config/configHolder';
 
@@ -48,8 +48,8 @@ export async function InitializeReplication(
 		setConfig(config);
 	}
 
-	const coreRoutes = createCoreRoutes(dbConnection);
-	app.use('/mtdd', coreRoutes);
+	const mtddRoutes = createMtddRoutes(dbConnection);
+	app.use('/mtdd', mtddRoutes);
 }
 
 export default knexHelper;
