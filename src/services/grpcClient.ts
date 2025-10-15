@@ -163,19 +163,19 @@ export function initializeGrpcClient(config: unknown): void {
 }
 
 /**
- * GrpcQueryClient - Backward compatibility wrapper
- * Delegates to exported functions to avoid static-only class
+ * GrpcQueryClient - Backward compatibility API
+ * Implemented as object literal to avoid static-only class pattern
  */
-export class GrpcQueryClient {
-	static callProcedure = callProcedure;
-	static executeQuery = executeQuery;
-	static executeQueryRace = executeQueryRace;
-	static executeQueryAny = executeQueryAny;
-	static executeQueryAll = executeQueryAll;
-	static executeQueryAllSettled = executeQueryAllSettled;
-	static getTenantShard = getTenantShardInfo;
-	static addTenantShard = addTenantShardMapping;
-	static ListenToChannel = listenToChannel;
-	static initialize = initializeGrpcClient;
-}
+export const GrpcQueryClient = {
+	callProcedure,
+	executeQuery,
+	executeQueryRace,
+	executeQueryAny,
+	executeQueryAll,
+	executeQueryAllSettled,
+	getTenantShard: getTenantShardInfo,
+	addTenantShard: addTenantShardMapping,
+	ListenToChannel: listenToChannel,
+	initialize: initializeGrpcClient,
+};
 

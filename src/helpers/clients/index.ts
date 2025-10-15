@@ -51,8 +51,6 @@ import {
 } from './mobileClients';
 import {
 	sendPushNotification,
-	sendPushNotificationToDevice,
-	broadcastPushNotification,
 	type PushMessage,
 } from './pushNotifications';
 import type { FirebaseConfig } from './types';
@@ -61,105 +59,107 @@ import type { FirebaseConfig } from './types';
 export type { FirebaseConfig, PushMessage };
 
 /**
- * ActiveClients - Main class for managing client connections
+ * ActiveClients - Main API for managing client connections
  *
  * This is the public API that maintains backward compatibility
- * while delegating to module functions internally
+ * Implemented as an object literal to avoid static-only class pattern
  */
-export default class ActiveClients {
+const ActiveClients = {
 	/**
 	 * Web clients map (for backward compatibility - direct access)
 	 */
-	static web = getWebClients();
+	web: getWebClients(),
 
 	/**
 	 * Mobile clients map (for backward compatibility - direct access)
 	 */
-	static mobile = getMobileClients();
+	mobile: getMobileClients(),
 
 	/**
 	 * Firebase app instance (for backward compatibility)
 	 */
-	static get firebase() {
+	get firebase() {
 		return getFirebaseInstance();
-	}
+	},
 
 	/**
 	 * Initialize Firebase with custom configuration
 	 * @param config - Firebase service account config object, file path, or null to use default
 	 */
-	static InitializeFirebase(config?: FirebaseConfig | string | null): void {
+	InitializeFirebase(config?: FirebaseConfig | string | null): void {
 		initializeFirebase(config);
-	}
+	},
 
 	/**
 	 * Check if Firebase is initialized
 	 */
-	static isFirebaseInitialized(): boolean {
+	isFirebaseInitialized(): boolean {
 		return isFirebaseInitialized();
-	}
+	},
 
 	/**
 	 * Reset Firebase instance (useful for testing or reconfiguration)
 	 */
-	static resetFirebase(): void {
+	resetFirebase(): void {
 		resetFirebase();
-	}
+	},
 
 	/**
 	 * Get current Firebase configuration
 	 */
-	static getFirebaseConfig(): FirebaseConfig | string | null {
+	getFirebaseConfig(): FirebaseConfig | string | null {
 		return getFirebaseConfig();
-	}
+	},
 
 	/**
 	 * Delete a specific web device event subscription
 	 */
-	static DeleteWebDeviceEvents(deviceId: string, eventName: string): void {
+	DeleteWebDeviceEvents(deviceId: string, eventName: string): void {
 		deleteWebDeviceEvents(deviceId, eventName);
-	}
+	},
 
 	/**
 	 * Add a web device event subscription
 	 */
-	static AddWebDeviceEvent(
+	AddWebDeviceEvent(
 		deviceId: string,
 		eventName: string,
 		res: express.Response,
 	): void {
 		addWebDeviceEvent(deviceId, eventName, res);
-	}
+	},
 
 	/**
 	 * Delete a web device and all its subscriptions
 	 */
-	static DeleteWebDevice(deviceId: string): void {
+	DeleteWebDevice(deviceId: string): void {
 		deleteWebDevice(deviceId);
-	}
+	},
 
 	/**
 	 * Add a mobile device with FCM token
 	 */
-	static AddMobileDevice(deviceId: string, fcmToken: string): void {
+	AddMobileDevice(deviceId: string, fcmToken: string): void {
 		addMobileDevice(deviceId, fcmToken);
-	}
+	},
 
 	/**
 	 * Delete a mobile device
 	 */
-	static DeleteMobileDevice(deviceId: string): void {
+	DeleteMobileDevice(deviceId: string): void {
 		deleteMobileDevice(deviceId);
-	}
+	},
 
 	/**
 	 * Send push notification to FCM token
 	 */
-	static SendPushNotification(
+	SendPushNotification(
 		fcmToken: string,
 		message: { title: string; body: string },
 	): void {
 		sendPushNotification(fcmToken, message);
-	}
-}
+	},
+};
+
+export default ActiveClients;
 
