@@ -60,8 +60,4 @@ node_modules/
 .env
 
 # Local development documentation
-TOOLING_DECISION.md
-REFACTORING_PLAN.md
-LIBRARY_DESIGN_DECISIONS.md
-GRPC_IMPLEMENTATION_ANALYSIS.md
-LOGGING_ANALYSIS.md
+.refactoring-docs/
