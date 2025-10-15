@@ -5,8 +5,7 @@
  */
 
 import pino from 'pino';
-
-const isDevelopment = process.env.NODE_ENV === 'development';
+import { config } from '../config/configHolder';
 
 /**
  * Base logger configuration
@@ -14,10 +13,10 @@ const isDevelopment = process.env.NODE_ENV === 'development';
  */
 export const logger = pino({
 	name: 'knex-mtdd', // 🎯 Library identifier - stands out in logs!
-	level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
+	level: config.isDevelopment ? 'debug' : 'info',
 
 	// Use pretty formatting in development for better readability
-	transport: isDevelopment
+	transport: config.isDevelopment
 		? {
 				target: 'pino-pretty',
 				options: {

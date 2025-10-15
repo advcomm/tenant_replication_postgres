@@ -7,42 +7,41 @@ import {
 	getCustomMtddHandler,
 } from './mtdd';
 import { dbLogger } from '../utils/logger';
+import { config } from '../config/configHolder';
 
-// Create database connection using environment variables
+// Create database connection using centralized configuration
 function createDatabaseConnection(): Knex {
-	const enableDatabase = process.env.ENABLE_DATABASE !== 'false';
-
-	if (!enableDatabase) {
+	if (!config.databaseEnabled) {
 		throw new Error('Database is disabled');
 	}
-	const dbConfig = JSON.parse(process.env.DB_CONFIG || '{}');
 
-	const connection =
-		process.env.NODE_ENV !== 'development'
-			? {
-					// Use dummy connection settings that won't be used
-					host: 'grpc-backend',
-					port: 50051,
-					user: 'grpc-user',
-					password: 'not-used',
-					database: 'grpc-routed',
-					// Disable actual connection pooling
-					pool: {
-						min: 0,
-						max: 0,
-					},
-				}
-			: {
-					host: dbConfig.host || 'localhost',
-					port: dbConfig.port || 5432,
-					user: dbConfig.user,
-					password: dbConfig.password,
-					database: dbConfig.database,
-					pool: {
-						min: 2,
-						max: 10,
-					},
-				};
+	const dbCfg = config.databaseConfig;
+
+	const connection = !config.isDevelopment
+		? {
+				// Use dummy connection settings that won't be used
+				host: 'grpc-backend',
+				port: 50051,
+				user: 'grpc-user',
+				password: 'not-used',
+				database: 'grpc-routed',
+				// Disable actual connection pooling
+				pool: {
+					min: 0,
+					max: 0,
+				},
+			}
+		: {
+				host: dbCfg.host || 'localhost',
+				port: dbCfg.port || 5432,
+				user: dbCfg.user,
+				password: dbCfg.password,
+				database: dbCfg.database,
+				pool: {
+					min: 2,
+					max: 10,
+				},
+			};
 
 	// Use the simplest possible Knex configuration
 	var result = knex({
@@ -52,7 +51,7 @@ function createDatabaseConnection(): Knex {
 	});
 
 	// Enable MTDD routing only for non-development environments
-	if (process.env.NODE_ENV !== 'development') {
+	if (!config.isDevelopment) {
 		dbLogger.info('Creating gRPC-only database interface');
 		dbLogger.info('Bypassing PostgreSQL connection - all operations via gRPC');
 		enableMtddRouting(result);
