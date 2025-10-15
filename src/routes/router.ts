@@ -9,6 +9,7 @@ import { db as knexHelperDb } from '../helpers/knexHelper';
 import { BackendClient } from '../services/grpcClient';
 import { apiLogger, notificationLogger } from '../utils/logger';
 import { config } from '../config/configHolder';
+import { LoadDataService, LoadDataValidationError } from '../services/loadDataService';
 
 export function createCoreRoutes(dbConnection: Knex): Router {
 	// Get portal configuration
@@ -27,6 +28,9 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 					);
 					return dbConnection;
 				})();
+
+	// Initialize services
+	const loadDataService = new LoadDataService(db);
 
 	const router = Router();
 
@@ -120,40 +124,28 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 		const TenantID = req.tid;
 		const sub = req.sub;
 		const roles = req.roles || [];
-		// const deviceId = req.headers?.deviceid as string;
+		
 		try {
 			const { tableName, lastUpdated } = req.query;
 			const deviceId = (req.query?.deviceId || req.headers?.deviceid) as string;
-			apiLogger.info(
-				{ tableName, user: sub, tenantId: TenantID, roles, lastUpdated },
-				'LoadData request',
-			);
 
-			// Validate required parameters
-			if (!tableName) {
-				res.send({ error: 'Missing required parameters: tableName' });
-				return;
-			}
-
-			//   var tenantShard=await  BackendClient.getTenantShard(TenantID);
-
-			// const redisInstance = RedisService.getInstance();
-			// await redisInstance.sadd(`${tableName}:${PortalInfo.TenantColumnName}:${TenantID}`, `${deviceId}:items_view`);
-
-			// Default lastUpdated to current timestamp if not provided
-			const lastUpdatedParam = lastUpdated || Date.now() * 1000;
-			// Execute the database query using authenticated tenant ID
-			const result = await db
-				.raw(`SELECT * FROM get_${tableName}(?, ?)`, [
-					lastUpdatedParam,
-					TenantID,
-				])
-				.mtdd();
-
-			apiLogger.debug({ result }, 'LoadData result');
+			// Use the service to load data
+			const result = await loadDataService.loadData({
+				tableName: tableName as string,
+				lastUpdated: lastUpdated ? (lastUpdated as string | number) : undefined,
+				tenantId: TenantID,
+				userId: sub,
+				roles,
+				deviceId,
+			});
 
 			res.status(200).json(result.rows);
 		} catch (error: unknown) {
+			if (error instanceof LoadDataValidationError) {
+				res.status(400).json({ error: error.message });
+				return;
+			}
+
 			const errorMessage =
 				error instanceof Error ? error.message : 'Unknown error';
 			apiLogger.error({ error: errorMessage }, 'LoadData error');
