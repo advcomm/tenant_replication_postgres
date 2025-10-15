@@ -2,46 +2,42 @@
  * gRPC Lookup Service
  *
  * Functions for tenant shard mapping and lookup
+ * Now using generated protobuf types!
  */
 
-import { parseResponse } from './utils';
-import type { TenantShardRequest } from '@/types/grpc';
+import type { LookupServiceClient } from '@/generated/lookup_grpc_pb';
+import type { TenantResponse } from '@/generated/lookup_pb';
+import { createTenantRequest, convertTenantResponse } from './protoConverters';
 import { grpcLogger } from '@/utils/logger';
 
 /**
  * Function to get tenant shard from lookup service
- * @param lookupClient - gRPC lookup client (typed as any - gRPC doesn't export client types)
+ * @param lookupClient - Typed lookup service client
  */
 export async function getTenantShard(
-	lookupClient: any, // gRPC client type not exported
+	lookupClient: LookupServiceClient,
 	tenantName: string,
 	tenantType: number,
 ): Promise<number> {
 	return new Promise((resolve, reject) => {
-		const request: TenantShardRequest = { tenantName, tenantType };
+		const protoRequest = createTenantRequest(tenantName, tenantType);
 
 		lookupClient.getTenantShard(
-			request,
-			(error: unknown, response: unknown) => {
+			protoRequest,
+			(error: Error | null, response: TenantResponse) => {
 				if (error) {
-					const errorMessage =
-						error instanceof Error ? error.message : 'Unknown error';
 					grpcLogger.error(
-						{ tenantName, error: errorMessage },
+						{ tenantName, error: error.message },
 						'Error getting tenant shard',
 					);
 					reject(error);
 				} else {
-					const parsedResponse = parseResponse(response) as {
-						rows: Array<{ shard_idx: number }>;
-					};
-					const shardId = parsedResponse.rows?.[0]?.shard_idx;
+					const result = convertTenantResponse(response);
+					const shardId = result.shard_index;
 
 					if (shardId === undefined || shardId === null) {
 						reject(
-							new Error(
-								`Invalid shard response for tenantName ${tenantName}: ${JSON.stringify(parsedResponse)}`,
-							),
+							new Error(`Invalid shard response for tenantName ${tenantName}`),
 						);
 					} else {
 						grpcLogger.info({ tenantName, shardId }, 'Tenant mapped to shard');
@@ -55,34 +51,32 @@ export async function getTenantShard(
 
 /**
  * Function to add tenant shard mapping
- * @param lookupClient - gRPC lookup client (typed as any - gRPC doesn't export client types)
+ * @param lookupClient - Typed lookup service client
  */
 export async function addTenantShard(
-	lookupClient: any, // gRPC client type not exported
+	lookupClient: LookupServiceClient,
 	tenantName: string,
 	tenantType: number,
 ): Promise<unknown> {
 	return new Promise((resolve, reject) => {
-		const request: TenantShardRequest = { tenantName, tenantType };
+		const protoRequest = createTenantRequest(tenantName, tenantType);
 
 		lookupClient.addTenantShard(
-			request,
-			(error: unknown, response: unknown) => {
+			protoRequest,
+			(error: Error | null, response: TenantResponse) => {
 				if (error) {
-					const errorMessage =
-						error instanceof Error ? error.message : 'Unknown error';
 					grpcLogger.error(
-						{ tenantName, tenantType, error: errorMessage },
+						{ tenantName, tenantType, error: error.message },
 						'Error adding tenant shard mapping',
 					);
 					reject(error);
 				} else {
-					const parsedResponse = parseResponse(response);
+					const result = convertTenantResponse(response);
 					grpcLogger.info(
-						{ tenantName, tenantType },
+						{ tenantName, tenantType, shardIndex: result.shard_index },
 						'Tenant shard mapping added',
 					);
-					resolve(parsedResponse);
+					resolve(result);
 				}
 			},
 		);

@@ -5,6 +5,10 @@
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
+	"files": {
+		"ignoreUnknown": true,
+		"includes": ["src/**/*.ts", "src/**/*.js", "!src/generated"]
+	},
 	"formatter": {
 		"enabled": true
 	},

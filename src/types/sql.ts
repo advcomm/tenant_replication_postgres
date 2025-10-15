@@ -68,21 +68,5 @@ export function isKnexQueryObject(obj: unknown): obj is KnexQueryObject {
 	);
 }
 
-/**
- * gRPC client type (external library doesn't export proper types)
- */
-export interface GrpcClient {
-	executeQuery: (
-		request: any,
-		callback: (error: unknown, response: unknown) => void,
-	) => void;
-	lookupTenantShard: (
-		request: any,
-		callback: (error: unknown, response: unknown) => void,
-	) => void;
-	addTenantShard: (
-		request: any,
-		callback: (error: unknown, response: unknown) => void,
-	) => void;
-	listenToChannel: (request: any) => any;
-}
+// gRPC client types are now properly typed via generated protobuf!
+// Import DBServiceClient and LookupServiceClient from generated files

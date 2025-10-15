@@ -39,6 +39,8 @@ export type {
 	SqlParameters,
 	SqlParameterValue,
 	KnexQueryObject,
-	GrpcClient,
 } from './sql';
 export { isKnexQueryObject } from './sql';
+// gRPC client types now imported from generated protobuf files:
+// - DBServiceClient from '@/generated/db_grpc_pb'
+// - LookupServiceClient from '@/generated/lookup_grpc_pb'

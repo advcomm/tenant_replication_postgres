@@ -61,3 +61,8 @@ node_modules/
 
 # Local development documentation
 .refactoring-docs/
+
+# Proto-generated files (KEEP THESE - they're committed!)
+# src/generated/ - Generated from proto/*.proto files
+# proto/ - Proto definition files (.proto)
+# Run 'npm run proto:generate' when .proto files change

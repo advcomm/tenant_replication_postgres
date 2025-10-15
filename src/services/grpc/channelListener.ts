@@ -2,18 +2,23 @@
  * gRPC Channel Listener
  *
  * Functions for listening to gRPC streaming channels
+ * Now using generated protobuf types!
  */
 
-import { parseResponse } from './utils';
-import type { ChannelMessage } from '../../types/api';
+import type { DBServiceClient } from '@/generated/db_grpc_pb';
+import {
+	ChannelRequest,
+	type ChannelMessage as ProtoChannelMessage,
+} from '@/generated/db_pb';
+import type { ChannelMessage } from '@/types/api';
 import { grpcLogger } from '@/utils/logger';
 
 /**
  * Listen to a gRPC channel with streaming
- * @param clients - gRPC client instances (typed as any[] - gRPC doesn't export client types)
+ * @param clients - Typed DB service clients
  */
 export function listenToChannel(
-	clients: any[], // gRPC client type not exported
+	clients: DBServiceClient[],
 	channel: string,
 	callback: (msg: ChannelMessage) => void,
 ): void {
@@ -29,24 +34,20 @@ export function listenToChannel(
 	const selectedClient = clients[0];
 	grpcLogger.info({ channel }, 'Starting channel listener on server 0');
 
-	const channelRequest = {
-		channelName: channel,
-	};
+	// Create protobuf request
+	const protoRequest = new ChannelRequest();
+	protoRequest.setChannel(channel);
 
-	const stream = selectedClient.listenToChannel(channelRequest);
+	// Start streaming
+	const stream = selectedClient.listenToChannel(protoRequest);
 
-	stream.on('data', (response: unknown) => {
+	stream.on('data', (protoMessage: ProtoChannelMessage) => {
 		try {
-			const parsedResponse = parseResponse(response) as {
-				data: string;
-				channelName: string;
-				timestamp: string;
-			};
-			// Convert the gRPC response back to the expected format
+			// Convert protobuf message to our internal format
 			const msg: ChannelMessage = {
-				payload: parsedResponse.data,
-				channel: parsedResponse.channelName,
-				timestamp: parsedResponse.timestamp,
+				payload: protoMessage.getPayload(),
+				channel: protoMessage.getChannel(),
+				timestamp: protoMessage.getTimestamp(),
 			};
 			callback(msg);
 		} catch (error) {
@@ -54,10 +55,8 @@ export function listenToChannel(
 		}
 	});
 
-	stream.on('error', (error: unknown) => {
-		const errorMessage =
-			error instanceof Error ? error.message : 'Unknown error';
-		grpcLogger.error({ channel, error: errorMessage }, 'Channel stream error');
+	stream.on('error', (error: Error) => {
+		grpcLogger.error({ channel, error: error.message }, 'Channel stream error');
 		// You could implement reconnection logic here
 	});
 

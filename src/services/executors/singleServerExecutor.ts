@@ -2,6 +2,7 @@
  * Single Server Executor
  *
  * Handles query execution for single-server deployments (simplified routing)
+ * Now using generated protobuf types!
  */
 
 import { grpcLogger } from '@/utils/logger';
@@ -9,7 +10,12 @@ import { processQueryParameters } from '@/services/grpc/queryUtils';
 import { convertBigIntToString } from '@/services/grpc/utils';
 import { queryServers } from '@/services/grpc/config';
 import { clients } from '@/services/grpc/clientSetup';
-import type { SqlParameters } from '@/types';
+import {
+	createQueryRequest,
+	convertQueryResponse,
+} from '@/services/grpc/protoConverters';
+import type { SqlParameters, GrpcQueryRequest } from '@/types';
+import type { QueryResponse } from '@/generated/db_pb';
 
 /**
  * Execute query on single server
@@ -31,34 +37,34 @@ export async function executeSingleServer(
 	);
 
 	const convertedParams = convertBigIntToString(params) as unknown[];
-	const request = {
+	const request: GrpcQueryRequest = {
 		query: processedQuery,
 		params: convertedParams || [],
 	};
+
+	const selectedClient = clients[0];
+	const protoRequest = createQueryRequest(request);
 
 	try {
 		grpcLogger.debug(
 			{ server: queryServers[0] },
 			'Executing query directly on single query server',
 		);
-		const selectedClient = clients[0];
 
 		return new Promise((resolve, reject) => {
 			selectedClient.executeQuery(
-				request,
-				(error: unknown, response: unknown) => {
+				protoRequest,
+				(error: Error | null, response: QueryResponse) => {
 					if (error) {
-						const errorMessage =
-							error instanceof Error ? error.message : 'Unknown error';
 						grpcLogger.error(
-							{ error: errorMessage },
+							{ error: error.message },
 							'Single server query execution failed',
 						);
 						reject(error);
 					} else {
-						const parsedResponse = response;
+						const result = convertQueryResponse(response);
 						grpcLogger.debug('Single server query executed successfully');
-						resolve(parsedResponse);
+						resolve(result);
 					}
 				},
 			);

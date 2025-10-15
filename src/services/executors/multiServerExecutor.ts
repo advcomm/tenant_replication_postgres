@@ -14,6 +14,7 @@ import {
 	callSpecificServerByShard,
 } from '@/services/grpc/serverCalls';
 import { getTenantShard, lookupClient, clients } from '@/services/grpc';
+import type { SqlParameters, GrpcQueryRequest } from '@/types';
 
 /**
  * Execute query with default strategy (any)
@@ -21,7 +22,7 @@ import { getTenantShard, lookupClient, clients } from '@/services/grpc';
  */
 export async function executeMultiServer(
 	query: string,
-	valuesOrBindings: Record<string, any> | any[] = {},
+	valuesOrBindings: SqlParameters = {},
 	tenantName?: string,
 ): Promise<unknown> {
 	const { query: processedQuery, params } = processQueryParameters(
@@ -31,7 +32,7 @@ export async function executeMultiServer(
 	);
 
 	const convertedParams = convertBigIntToString(params) as unknown[];
-	const request = {
+	const request: GrpcQueryRequest = {
 		query: processedQuery,
 		params: convertedParams || [],
 	};
@@ -66,7 +67,7 @@ export async function executeMultiServer(
  */
 export async function executeMultiServerRace(
 	query: string,
-	valuesOrBindings: Record<string, any> | any[] = {},
+	valuesOrBindings: SqlParameters = {},
 ): Promise<unknown> {
 	const { query: processedQuery, params } = processQueryParameters(
 		query,
@@ -75,7 +76,7 @@ export async function executeMultiServerRace(
 	);
 
 	const convertedParams = convertBigIntToString(params) as unknown[];
-	const request = {
+	const request: GrpcQueryRequest = {
 		query: processedQuery,
 		params: convertedParams || [],
 	};
@@ -100,7 +101,7 @@ export async function executeMultiServerRace(
  */
 export async function executeMultiServerAny(
 	query: string,
-	valuesOrBindings: Record<string, any> | any[] = {},
+	valuesOrBindings: SqlParameters = {},
 ): Promise<unknown> {
 	const { query: processedQuery, params } = processQueryParameters(
 		query,
@@ -109,7 +110,7 @@ export async function executeMultiServerAny(
 	);
 
 	const convertedParams = convertBigIntToString(params) as unknown[];
-	const request = {
+	const request: GrpcQueryRequest = {
 		query: processedQuery,
 		params: convertedParams || [],
 	};
@@ -134,7 +135,7 @@ export async function executeMultiServerAny(
  */
 export async function executeMultiServerAll(
 	query: string,
-	valuesOrBindings: Record<string, any> | any[] = {},
+	valuesOrBindings: SqlParameters = {},
 ): Promise<unknown[]> {
 	const { query: processedQuery, params } = processQueryParameters(
 		query,
@@ -143,7 +144,7 @@ export async function executeMultiServerAll(
 	);
 
 	const convertedParams = convertBigIntToString(params) as unknown[];
-	const request = {
+	const request: GrpcQueryRequest = {
 		query: processedQuery,
 		params: convertedParams || [],
 	};
@@ -168,7 +169,7 @@ export async function executeMultiServerAll(
  */
 export async function executeMultiServerAllSettled(
 	query: string,
-	valuesOrBindings: Record<string, any> | any[] = {},
+	valuesOrBindings: SqlParameters = {},
 ): Promise<PromiseSettledResult<unknown>[]> {
 	const { query: processedQuery, params } = processQueryParameters(
 		query,
@@ -177,7 +178,7 @@ export async function executeMultiServerAllSettled(
 	);
 
 	const convertedParams = convertBigIntToString(params) as unknown[];
-	const request = {
+	const request: GrpcQueryRequest = {
 		query: processedQuery,
 		params: convertedParams || [],
 	};
@@ -185,19 +186,14 @@ export async function executeMultiServerAllSettled(
 	try {
 		grpcLogger.debug('Executing query on all servers using Promise.allSettled');
 
-		const promises = clients.map((client) => {
-			return new Promise((resolve, reject) => {
-				client.executeQuery(request, (error: unknown, response: unknown) => {
-					if (error) {
-						reject(error);
-					} else {
-						resolve(response);
-					}
-				});
-			});
-		});
+		// Use callAllServersAll which handles proto conversion
+		const results = await callAllServersAll(clients, request);
 
-		return await Promise.allSettled(promises);
+		// Convert to PromiseSettledResult format
+		return results.map((result) => ({
+			status: 'fulfilled' as const,
+			value: result,
+		}));
 	} catch (error: unknown) {
 		const errorMessage =
 			error instanceof Error ? error.message : 'Unknown error';

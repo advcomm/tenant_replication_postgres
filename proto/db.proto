@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package db;
+
+// Database Query Service
+// Executes SQL queries and provides channel listening for real-time updates
+service DBService {
+	// Execute a SQL query with parameters
+	rpc ExecuteQuery(QueryRequest) returns (QueryResponse);
+
+	// Listen to PostgreSQL NOTIFY/LISTEN channel (streaming)
+	rpc ListenToChannel(ChannelRequest) returns (stream ChannelMessage);
+}
+
+// Query execution request
+message QueryRequest {
+	string query = 1; // SQL query string
+	repeated string params = 2; // Query parameters (stringified for flexibility)
+	string name = 3; // Optional query name for logging/tracking
+	bool is_function = 4; // Whether this is a function call
+}
+
+// Query execution response
+// Matches PostgreSQL QueryResult structure
+message QueryResponse {
+	repeated Row rows = 1; // Result rows
+	int32 row_count = 2; // Number of rows affected
+	string command = 3; // SQL command type (SELECT, INSERT, etc.)
+	int64 oid = 4; // Object ID (for INSERT operations)
+}
+
+// Single row of data
+message Row {
+	// Fields stored as JSON string for flexibility
+	// This matches pg's row structure which can have any fields
+	string json_data = 1;
+}
+
+// Channel subscription request
+message ChannelRequest {
+	string channel = 1; // PostgreSQL channel name
+}
+
+// Channel notification message (streamed)
+message ChannelMessage {
+	string channel = 1; // Channel name
+	string payload = 2; // Notification payload (usually JSON)
+	string timestamp = 3; // Timestamp of notification
+}
+
