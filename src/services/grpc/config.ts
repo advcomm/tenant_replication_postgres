@@ -13,29 +13,16 @@ import {
 } from '../../constants/grpc';
 import type { GrpcConnectionOptions } from '../../types/grpc';
 import { grpcLogger } from '../../utils/logger';
+import { config } from '../../config/configHolder';
 
-// Backend servers configuration
-export const backendServers: string[] = [];
-
-// Load from environment or use defaults
-if (process.env.NODE_ENV !== 'development') {
-	const serverList = JSON.parse(process.env.BACKEND_SERVERS || '[]');
-	if (serverList) {
-		backendServers.push(...serverList);
-	} else {
-		throw new Error(
-			'No backend servers configured. Please set BACKEND_SERVERS environment variable.',
-		);
-	}
-} else {
-	const serverList = JSON.parse(process.env.BACKEND_SERVERS || '["127.0.0.1"]');
-	backendServers.push(...serverList);
-}
+// Backend servers configuration from config holder
+export const backendServers = config.backendServers;
 
 // Single server deployment detection
 export const IS_SINGLE_SERVER_DEPLOYMENT = backendServers.length === 1;
 
-if (process.env.NODE_ENV !== 'development') {
+// Log configuration in non-development mode
+if (!config.isDevelopment) {
 	grpcLogger.info(
 		{ serverCount: backendServers.length, servers: backendServers },
 		'Backend servers configuration loaded',

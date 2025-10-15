@@ -8,10 +8,12 @@ import ActiveClients from '../helpers/activeClients';
 import { db as knexHelperDb } from '../helpers/knexHelper';
 import { BackendClient } from '../services/grpcClient';
 import { apiLogger, notificationLogger } from '../utils/logger';
-
-const PortalInfo = JSON.parse(process.env.PortalInfo || '{}')!;
+import { config } from '../config/configHolder';
 
 export function createCoreRoutes(dbConnection: Knex): Router {
+	// Get portal configuration
+	const PortalInfo = config.portalInfo;
+
 	// Check if the provided dbConnection is the same as the one from knexHelper (which has MTDD enabled)
 	const db =
 		dbConnection === knexHelperDb
@@ -248,10 +250,9 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 
 	///Default channel listener if not any custom channel is provided.
 	const listenChannel = async (msg: ChannelMessage) => {
-		const { table, action, data } =
-			process.env.NODE_ENV !== 'development'
-				? JSON.parse(JSON.parse(msg.payload))
-				: JSON.parse(msg.payload);
+		const { table, action, data } = !config.isDevelopment
+			? JSON.parse(JSON.parse(msg.payload))
+			: JSON.parse(msg.payload);
 		const dataTenantID =
 			data[PortalInfo?.TenantColumnName ?? ''] || data.TenantID;
 
@@ -282,7 +283,7 @@ export function createCoreRoutes(dbConnection: Knex): Router {
 		}
 	};
 
-	if (process.env.NODE_ENV !== 'development') {
+	if (!config.isDevelopment) {
 		BackendClient.ListenToChannel('table_changes', listenChannel);
 	} else {
 		db.client.acquireConnection().then((pgClient: any) => {

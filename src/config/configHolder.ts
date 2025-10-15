@@ -117,5 +117,16 @@ export const config = {
 		const cfg = getConfig();
 		return cfg?.firebase;
 	},
+
+	get grpcInsecure(): boolean {
+		// Check config first, then env var
+		const cfg = getConfig();
+		if (cfg?.mtdd) {
+			// If config provided but no explicit insecure setting, default to false
+			return false;
+		}
+		warnAboutEnvFallback();
+		return process.env.GRPC_INSECURE === 'true';
+	},
 };
 

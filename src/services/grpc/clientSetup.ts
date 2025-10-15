@@ -10,6 +10,7 @@ import {
 	createGrpcConnectionOptions,
 	backendServers,
 } from './config';
+import { config } from '../../config/configHolder';
 
 // Manual gRPC service definition for database operations
 // Note: serialization functions use 'any' as required by @grpc/grpc-js API
@@ -68,12 +69,12 @@ const LookupServiceClient = grpc.makeGenericClientConstructor(
 );
 
 // Check for insecure mode
-const useInsecure = process.env.GRPC_INSECURE === 'true';
+const useInsecure = config.grpcInsecure;
 
 // Create client instances for all backend servers
 // Note: clients typed as 'any[]' because gRPC client types are not exported by @grpc/grpc-js
 export const clients: any[] = backendServers.map((server) => {
-	if (process.env.NODE_ENV !== 'development' && !useInsecure) {
+	if (!config.isDevelopment && !useInsecure) {
 		return new DBServiceClient(
 			`${server}`,
 			createGrpcCredentials(false),
@@ -91,36 +92,33 @@ export const clients: any[] = backendServers.map((server) => {
 });
 
 // Create lookup service client instance
-const lookupServerList =
-	process.env.NODE_ENV !== 'development'
-		? JSON.parse(process.env.LOOKUP_SERVER || '["127.0.0.1"]')
-		: ['127.0.0.1'];
+const lookupServer = config.lookupServer;
 
-if (!lookupServerList) {
+if (!lookupServer) {
 	throw new Error(
-		'No lookup server configured. Please set LOOKUP_SERVER environment variable.',
+		'No lookup server configured. Please provide lookupServer in configuration.',
 	);
 }
 
-const useInsecureLookup = process.env.GRPC_INSECURE === 'true';
+const useInsecureLookup = config.grpcInsecure;
 
 export let lookupClient: any;
-if (process.env.NODE_ENV !== 'development' && !useInsecureLookup) {
+if (!config.isDevelopment && !useInsecureLookup) {
 	lookupClient = new LookupServiceClient(
-		`${lookupServerList[0]}`,
+		lookupServer,
 		createGrpcCredentials(false),
 		createGrpcConnectionOptions(false),
 	);
 } else if (useInsecureLookup) {
 	lookupClient = new LookupServiceClient(
-		`${lookupServerList[0]}`,
+		lookupServer,
 		createGrpcCredentials(true),
 		createGrpcConnectionOptions(true),
 	);
 } else {
 	// Development mode
 	lookupClient = new LookupServiceClient(
-		`${lookupServerList[0]}:50054`,
+		`${lookupServer}:50054`,
 		grpc.credentials.createInsecure(),
 	);
 }

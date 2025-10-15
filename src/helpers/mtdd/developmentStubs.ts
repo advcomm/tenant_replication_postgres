@@ -8,6 +8,7 @@
 import type { Knex } from 'knex';
 import type { MtddMeta } from '../../types/mtdd';
 import { mtddLogger } from '../../utils/logger';
+import { config } from '../../config/configHolder';
 
 /**
  * Development MTDD Stubs - No-op implementation for development environment
@@ -15,7 +16,7 @@ import { mtddLogger } from '../../utils/logger';
  */
 export function enableDevelopmentMtddStubs(knexInstance: Knex): void {
 	mtddLogger.info(
-		{ env: process.env.NODE_ENV },
+		{ isDevelopment: config.isDevelopment },
 		'Setting up MTDD no-op stubs for development environment',
 	);
 

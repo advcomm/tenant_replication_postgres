@@ -12,6 +12,7 @@ import {
 } from './methodWrappers';
 import { grpcMtddHandler } from './grpcHandler';
 import { mtddLogger } from '../../utils/logger';
+import { config } from '../../config/configHolder';
 
 // Global custom MTDD handler - can be set by users
 let customMtddHandler:
@@ -24,10 +25,7 @@ let customMtddHandler:
  */
 export function enableMtddRouting(knexInstance: Knex): void {
 	// Single server deployment detection
-	const serverList = process.env.BACKEND_SERVERS?.split(',') || [
-		'192.168.0.87',
-		'192.168.0.2',
-	];
+	const serverList = config.backendServers;
 	const isSingleServer = serverList.length === 1;
 
 	if (isSingleServer) {
