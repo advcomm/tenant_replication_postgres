@@ -9,22 +9,27 @@ import { setConfig } from '@/config/configHolder';
 export {
 	default as ActiveClients,
 	FirebaseConfig,
-} from '@/helpers/activeClients';
+} from '@/helpers/clients';
 
 // Export configuration types for consumers
-export type { LibraryConfig, DatabaseConfig, MtddBackendConfig, PortalConfig } from '@/types/config';
+export type {
+	LibraryConfig,
+	DatabaseConfig,
+	MtddBackendConfig,
+	PortalConfig,
+} from '@/types/config';
 
 /**
  * Initialize tenant replication with MTDD support
- * 
+ *
  * @param app - Express application instance
  * @param dbConnection - Knex database connection
  * @param config - Optional library configuration (recommended). Falls back to process.env if not provided (deprecated)
- * 
+ *
  * @example
  * ```typescript
  * import { InitializeReplication } from '@advcomm/tenant_replication_postgres';
- * 
+ *
  * await InitializeReplication(app, db, {
  *   mtdd: {
  *     backendServers: ['server1:50051', 'server2:50051'],

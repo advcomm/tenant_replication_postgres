@@ -46,8 +46,8 @@ function warnAboutEnvFallback() {
 	if (!hasWarnedAboutEnvFallback) {
 		console.warn(
 			'[knex-mtdd] No configuration provided to InitializeReplication(). ' +
-			'Falling back to process.env (deprecated). ' +
-			'Please pass configuration object to InitializeReplication().',
+				'Falling back to process.env (deprecated). ' +
+				'Please pass configuration object to InitializeReplication().',
 		);
 		hasWarnedAboutEnvFallback = true;
 	}
@@ -80,9 +80,10 @@ export const config = {
 			return cfg.mtdd.lookupServer;
 		}
 		warnAboutEnvFallback();
-		const servers = process.env.NODE_ENV !== 'development'
-			? JSON.parse(process.env.LOOKUP_SERVER || '["127.0.0.1"]')
-			: ['127.0.0.1'];
+		const servers =
+			process.env.NODE_ENV !== 'development'
+				? JSON.parse(process.env.LOOKUP_SERVER || '["127.0.0.1"]')
+				: ['127.0.0.1'];
 		return servers[0];
 	},
 
@@ -129,4 +130,3 @@ export const config = {
 		return process.env.GRPC_INSECURE === 'true';
 	},
 };
-

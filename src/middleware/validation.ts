@@ -57,10 +57,10 @@ export function validateQuery(schema: ZodSchema) {
 		try {
 			// Validate and transform query parameters
 			const validated = schema.parse(req.query);
-			
+
 			// Replace req.query with validated/transformed data
 			req.query = validated as any;
-			
+
 			apiLogger.debug({ validated }, 'Query parameters validated');
 			next();
 		} catch (error) {
@@ -89,10 +89,10 @@ export function validateBody(schema: ZodSchema) {
 		try {
 			// Validate and transform body
 			const validated = schema.parse(req.body);
-			
+
 			// Replace req.body with validated/transformed data
 			req.body = validated;
-			
+
 			apiLogger.debug({ validated }, 'Request body validated');
 			next();
 		} catch (error) {
@@ -118,10 +118,10 @@ export function validateParams(schema: ZodSchema) {
 		try {
 			// Validate and transform path parameters
 			const validated = schema.parse(req.params);
-			
+
 			// Replace req.params with validated/transformed data
 			req.params = validated as any;
-			
+
 			apiLogger.debug({ validated }, 'Path parameters validated');
 			next();
 		} catch (error) {
@@ -138,4 +138,3 @@ export function validateParams(schema: ZodSchema) {
 		}
 	};
 }
-

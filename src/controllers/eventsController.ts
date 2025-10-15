@@ -8,7 +8,7 @@ import type { Response } from 'express';
 import type { Knex } from 'knex';
 import { decodeAccessToken } from '@advcomm/utils/dist/helper/authenticationHelper';
 import type { AuthenticatedRequest, ChannelMessage } from '@/types/api';
-import ActiveClients from '@/helpers/activeClients';
+import ActiveClients from '@/helpers/clients';
 import { BackendClient } from '@/services/grpcClient';
 import { apiLogger, notificationLogger } from '@/utils/logger';
 import { config } from '@/config/configHolder';
@@ -122,7 +122,8 @@ export class EventsController {
 			? JSON.parse(JSON.parse(msg.payload))
 			: JSON.parse(msg.payload);
 		const dataTenantID =
-			data[this.PortalInfo?.TenantColumnName as string ?? ''] || data.TenantID;
+			data[(this.PortalInfo?.TenantColumnName as string) ?? ''] ||
+			data.TenantID;
 
 		// TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
 		const result = await this.db
@@ -178,4 +179,3 @@ export class EventsController {
 		}
 	}
 }
-

@@ -47,4 +47,3 @@ export class LoadDataController {
 		res.status(200).json(result.rows);
 	}
 }
-

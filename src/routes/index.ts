@@ -59,7 +59,10 @@ export function createMtddRoutes(dbConnection: Knex): Router {
 	 * GET /events
 	 * Server-Sent Events endpoint for real-time notifications
 	 */
-	router.get('/events', asyncHandler((req, res) => eventsController.handleEvents(req, res)));
+	router.get(
+		'/events',
+		asyncHandler((req, res) => eventsController.handleEvents(req, res)),
+	);
 
 	// ============================================================================
 	// Setup channel listeners for notifications
@@ -71,4 +74,3 @@ export function createMtddRoutes(dbConnection: Knex): Router {
 
 // Export for backward compatibility
 export default createMtddRoutes;
-

@@ -48,7 +48,9 @@ export class LoadDataService {
 	 */
 	private validateParams(params: LoadDataParams): void {
 		if (!params.tableName) {
-			throw new LoadDataValidationError('Missing required parameter: tableName');
+			throw new LoadDataValidationError(
+				'Missing required parameter: tableName',
+			);
 		}
 
 		if (!params.tenantId) {
@@ -97,4 +99,3 @@ export class LoadDataService {
 		};
 	}
 }
-
