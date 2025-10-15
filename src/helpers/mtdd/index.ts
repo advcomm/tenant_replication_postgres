@@ -10,8 +10,9 @@ export {
 	createMtddMethodWrapper,
 	createReRunMethodWrapper,
 } from './methodWrappers';
+export { enableMtddRouting } from './routing';
 export {
-	enableMtddRouting,
+	performMtddAutoActions,
 	setCustomMtddHandler,
 	getCustomMtddHandler,
-} from './routing';
+} from './actions/performMtddActions';
