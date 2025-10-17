@@ -7,7 +7,7 @@
 import { QueryRequest, type QueryResponse, type Row } from '@/generated/db_pb';
 import { TenantRequest, type TenantResponse } from '@/generated/lookup_pb';
 import type { SqlParameters, SqlParameterValue } from '@/types';
-import type { GrpcQueryRequest, GrpcProcedureRequest } from '@/types/grpc';
+import type { GrpcProcedureRequest, GrpcQueryRequest } from '@/types/grpc';
 
 /**
  * Convert SQL parameter value to string for protobuf

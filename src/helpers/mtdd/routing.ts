@@ -5,37 +5,67 @@
  */
 
 import type { Knex } from 'knex';
-import type { MtddMeta, SqlResult } from '@/types/mtdd';
-import {
-	createMtddMethodWrapper,
-	createReRunMethodWrapper,
-} from './methodWrappers';
-import { mtddLogger } from '@/utils/logger';
 import { config } from '@/config/configHolder';
-import {
-	performMtddAutoActions,
-	setCustomMtddHandler,
-	getCustomMtddHandler,
-} from './actions/performMtddActions';
-import { setupChainEndDetection } from './patching/chainEndDetection';
-import { patchRawQueries } from './patching/rawQueryPatch';
 import {
 	MTDD_DEFAULTS,
 	PG_CLIENT_METHODS,
 	RE_RUN_METHODS,
 } from '@/constants/mtdd';
+import { type MtddMeta, MtddMetaSchema, type SqlResult } from '@/types/mtdd';
+import { mtddLogger } from '@/utils/logger';
+import {
+	createMtddMethodWrapper,
+	createReRunMethodWrapper,
+} from './methodWrappers';
 import { createMtddMethod } from './mtddMethod';
+import { setupChainEndDetection } from './patching/chainEndDetection';
+import { patchRawQueries } from './patching/rawQueryPatch';
+
+/**
+ * Global Knex instance storage for fallback execution
+ * Set by enableMtddRouting, used by performMtddAutoActions for local query execution
+ */
+let knexInstance: Knex | null = null;
+
+/**
+ * Get the stored Knex instance for local query execution
+ * Used when USE_MTDD=0 to fallback to standard Knex/pg
+ *
+ * @returns The Knex instance or null if not set
+ */
+export function getKnexInstance(): Knex | null {
+	return knexInstance;
+}
 
 /**
  * Enhanced MTDD Routing with comprehensive PostgreSQL client method patching
  * Supports transparent .mtdd() chaining with all Knex QueryBuilder methods
  */
-export function enableMtddRouting(knexInstance: Knex): void {
+export function enableMtddRouting(_knexInstance: Knex): void {
+	// Store Knex instance for fallback execution when USE_MTDD=0
+	knexInstance = _knexInstance;
+
+	// Log MTDD routing configuration
+	if (!config.useMtdd) {
+		mtddLogger.warn(
+			'USE_MTDD=0 - MTDD gRPC routing disabled. All queries will execute on local Knex connection.',
+		);
+		mtddLogger.info(
+			'To enable gRPC routing, set USE_MTDD=1 in environment or config',
+		);
+		mtddLogger.info(
+			'.mtdd() method is still available but will execute queries locally',
+		);
+		// Still patch the methods so .mtdd() is available, but it will fallback to local execution
+	} else {
+		mtddLogger.info('USE_MTDD=1 - MTDD gRPC routing enabled');
+	}
+
 	// Single server deployment detection
 	const serverList = config.queryServers;
 	const isSingleServer = serverList.length === 1;
 
-	if (isSingleServer) {
+	if (config.useMtdd && isSingleServer) {
 		mtddLogger.info(
 			{ server: serverList[0] },
 			'Single server deployment detected - simplified gRPC routing enabled',
@@ -56,10 +86,12 @@ export function enableMtddRouting(knexInstance: Knex): void {
 	}
 
 	// Multi-server MTDD routing (existing complex logic)
-	mtddLogger.info(
-		{ serverCount: serverList.length },
-		'Multi-server deployment detected - full MTDD routing enabled',
-	);
+	if (config.useMtdd && !isSingleServer) {
+		mtddLogger.info(
+			{ serverCount: serverList.length },
+			'Multi-server deployment detected - full MTDD routing enabled',
+		);
+	}
 
 	try {
 		// Note: performMtddAutoActions and setupChainEndDetection are now imported from separate modules
@@ -85,23 +117,13 @@ export function enableMtddRouting(knexInstance: Knex): void {
 
 				let meta: MtddMeta;
 
-				// Type guard for MtddMeta object
-				const isMtddMeta = (obj: unknown): obj is MtddMeta => {
-					return (
-						typeof obj === 'object' &&
-						obj !== null &&
-						'tenantId' in obj &&
-						(typeof (obj as MtddMeta).tenantId === 'string' ||
-							typeof (obj as MtddMeta).tenantId === 'number' ||
-							(obj as MtddMeta).tenantId === null ||
-							(obj as MtddMeta).tenantId === undefined)
-					);
-				};
-
 				// Handle different parameter signatures
-				if (isMtddMeta(tenantIdOrMeta)) {
+				// Use Zod to validate if it's an MtddMeta object
+				const parsedMeta = MtddMetaSchema.safeParse(tenantIdOrMeta);
+
+				if (parsedMeta.success) {
 					// Legacy object syntax: .mtdd({ tenantId: '...', ... })
-					meta = { ...tenantIdOrMeta };
+					meta = parsedMeta.data as MtddMeta;
 				} else if (tenantIdOrMeta === undefined) {
 					// No tenant ID provided - execute on all servers (chain end)
 					meta = {
@@ -119,8 +141,9 @@ export function enableMtddRouting(knexInstance: Knex): void {
 					}
 				} else {
 					// New parameter syntax: .mtdd(tenantId, tenantType, methodType, options)
+					// tenantIdOrMeta is string | number at this point
 					meta = {
-						tenantId: tenantIdOrMeta,
+						tenantId: tenantIdOrMeta as MtddMeta['tenantId'],
 						...options,
 					};
 
@@ -197,7 +220,7 @@ export function enableMtddRouting(knexInstance: Knex): void {
 						: createMtddMethodWrapper(originalMethod).apply(this, args);
 
 					// If this query has MTDD metadata, set up chain-end detection immediately
-					if (result && result._mtddMeta && !result._chainEndSetup) {
+					if (result?._mtddMeta && !result._chainEndSetup) {
 						setupChainEndDetection(result);
 						result._chainEndSetup = true;
 					}

@@ -8,7 +8,7 @@
 import type { DBServiceClient } from '@/generated/db_grpc_pb';
 import type { QueryResponse } from '@/generated/db_pb';
 import type { GrpcQueryRequest } from '@/types/grpc';
-import { createQueryRequest, convertQueryResponse } from './protoConverters';
+import { convertQueryResponse, createQueryRequest } from './protoConverters';
 
 /**
  * Function to call all servers concurrently and return first valid response (Promise.race)

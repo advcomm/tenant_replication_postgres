@@ -7,8 +7,8 @@
 
 import type { LookupServiceClient } from '@/generated/lookup_grpc_pb';
 import type { TenantResponse } from '@/generated/lookup_pb';
-import { createTenantRequest, convertTenantResponse } from './protoConverters';
 import { grpcLogger } from '@/utils/logger';
+import { convertTenantResponse, createTenantRequest } from './protoConverters';
 
 /**
  * Function to get tenant shard from lookup service

@@ -7,10 +7,10 @@
 export { listenToChannel } from './channelListener';
 export { clients, lookupClient } from './clientSetup';
 export {
-	IS_SINGLE_SERVER_DEPLOYMENT,
-	queryServers,
 	createGrpcConnectionOptions,
 	createGrpcCredentials,
+	IS_SINGLE_SERVER_DEPLOYMENT,
+	queryServers,
 } from './config';
 export { addTenantShard, getTenantShard } from './lookupService';
 export {

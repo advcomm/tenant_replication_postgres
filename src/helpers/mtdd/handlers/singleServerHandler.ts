@@ -4,10 +4,10 @@
  * Simplified routing for single gRPC query server deployments
  */
 
-import type { MtddMeta, SqlResult } from '@/types/mtdd';
-import { GrpcQueryClient } from '@/services/grpcClient';
-import { mtddLogger } from '@/utils/logger';
 import { config } from '@/config/configHolder';
+import { GrpcQueryClient } from '@/services/grpcClient';
+import type { MtddMeta, SqlResult } from '@/types/mtdd';
+import { mtddLogger } from '@/utils/logger';
 
 /**
  * Handle MTDD routing for single server deployments

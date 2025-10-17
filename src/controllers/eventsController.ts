@@ -6,10 +6,10 @@
 
 import type { Response } from 'express';
 import type { Knex } from 'knex';
-import type { AuthenticatedRequest } from '@/types/api';
 import ActiveClients from '@/helpers/clients';
-import { notificationLogger } from '@/utils/logger';
 import { NotificationService } from '@/services/notificationService';
+import type { AuthenticatedRequest } from '@/types/api';
+import { notificationLogger } from '@/utils/logger';
 
 /**
  * Events Controller for SSE endpoints

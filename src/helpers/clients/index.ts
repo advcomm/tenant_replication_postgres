@@ -32,25 +32,25 @@
 
 import type express from 'express';
 import {
-	initializeFirebase,
+	getFirebaseConfig,
 	getFirebaseInstance,
+	initializeFirebase,
 	isFirebaseInitialized,
 	resetFirebase,
-	getFirebaseConfig,
 } from './firebaseClient';
 import {
-	getWebClients,
-	addWebDeviceEvent,
-	deleteWebDeviceEvents,
-	deleteWebDevice,
-} from './webClients';
-import {
-	getMobileClients,
 	addMobileDevice,
 	deleteMobileDevice,
+	getMobileClients,
 } from './mobileClients';
-import { sendPushNotification, type PushMessage } from './pushNotifications';
+import { type PushMessage, sendPushNotification } from './pushNotifications';
 import type { FirebaseConfig } from './types';
+import {
+	addWebDeviceEvent,
+	deleteWebDevice,
+	deleteWebDeviceEvents,
+	getWebClients,
+} from './webClients';
 
 // Re-export types
 export type { FirebaseConfig, PushMessage };

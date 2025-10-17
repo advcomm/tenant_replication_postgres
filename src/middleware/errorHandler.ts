@@ -4,10 +4,9 @@
  * Centralized error handling for Express routes
  */
 
-import type { Request, Response, NextFunction } from 'express';
-import { apiLogger } from '@/utils/logger';
+import type { NextFunction, Request, Response } from 'express';
 import { BaseError } from '@/errors/BaseError';
-import { ValidationError } from '@/errors/ValidationError';
+import { apiLogger } from '@/utils/logger';
 
 /**
  * Standard error response format
@@ -35,7 +34,7 @@ export interface ErrorResponse {
  */
 export function errorHandler(
 	error: Error | BaseError,
-	req: Request,
+	_req: Request,
 	res: Response,
 	next: NextFunction,
 ): void {
@@ -134,7 +133,7 @@ export function errorHandler(
 export function notFoundHandler(
 	req: Request,
 	res: Response,
-	next: NextFunction,
+	_next: NextFunction,
 ): void {
 	const response: ErrorResponse = {
 		error: 'NotFound',

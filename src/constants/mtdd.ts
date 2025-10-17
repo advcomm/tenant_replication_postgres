@@ -24,7 +24,7 @@ export const MTDD_DEFAULTS: Partial<MtddMeta> = {
  * PostgreSQL/Knex client methods that need MTDD patching
  * Maps method name to description for documentation/logging
  */
-export const PG_CLIENT_METHODS: Record<string, string> = {
+export const PG_CLIENT_METHODS = {
 	// SELECT operations
 	select: 'SELECT - Column selection with optional aliasing',
 	distinct: 'DISTINCT - Remove duplicate rows from result set',
@@ -115,7 +115,7 @@ export const PG_CLIENT_METHODS: Record<string, string> = {
 	// Conditional operations
 	when: 'WHEN - Conditional query building',
 	unless: 'UNLESS - Negative conditional query building',
-};
+} as const;
 
 /**
  * Methods that should trigger IsReRun=true flag

@@ -1,13 +1,12 @@
 import { type Knex, knex } from 'knex';
+import { config } from '@/config/configHolder';
 import type { MtddMeta, SqlResult } from '@/types/mtdd';
+import { dbLogger } from '@/utils/logger';
 import {
 	enableMtddRouting,
-	enableDevelopmentMtddStubs,
-	setCustomMtddHandler,
 	getCustomMtddHandler,
+	setCustomMtddHandler,
 } from './mtdd';
-import { dbLogger } from '@/utils/logger';
-import { config } from '@/config/configHolder';
 
 // Create database connection using centralized configuration
 function createDatabaseConnection(): Knex {
@@ -17,9 +16,10 @@ function createDatabaseConnection(): Knex {
 
 	const dbCfg = config.databaseConfig;
 
-	const connection = !config.isDevelopment
+	// Connection settings based on useMtdd (not isDevelopment!)
+	const connection = config.useMtdd
 		? {
-				// Use dummy connection settings that won't be used
+				// gRPC mode: Use dummy connection (won't be used)
 				host: 'grpc-backend',
 				port: 50051,
 				user: 'grpc-user',
@@ -32,6 +32,7 @@ function createDatabaseConnection(): Knex {
 				},
 			}
 		: {
+				// Local mode: Use real PostgreSQL connection
 				host: dbCfg.host || 'localhost',
 				port: dbCfg.port || 5432,
 				user: dbCfg.user,
@@ -47,20 +48,17 @@ function createDatabaseConnection(): Knex {
 	var result = knex({
 		client: 'pg',
 		connection: connection,
-		debug: false,
+		debug: config.isDevelopment, // Debug based on isDevelopment
 	});
 
-	// Enable MTDD routing only for non-development environments
-	if (!config.isDevelopment) {
-		dbLogger.info('Creating gRPC-only database interface');
-		dbLogger.info('Bypassing PostgreSQL connection - all operations via gRPC');
-		enableMtddRouting(result);
-	} else {
-		dbLogger.info(
-			'Enabling development MTDD stubs - .mtdd() calls will be no-ops',
-		);
-		enableDevelopmentMtddStubs(result);
-	}
+	// Always enable MTDD routing - it handles both local and gRPC internally
+	dbLogger.info(
+		config.useMtdd
+			? 'USE_MTDD=1 - Queries will route via gRPC'
+			: 'USE_MTDD=0 - Queries will execute on local PostgreSQL',
+	);
+	enableMtddRouting(result);
+
 	return result;
 }
 
@@ -156,7 +154,6 @@ const db = createDatabaseConnection();
 export {
 	db,
 	enableMtddRouting,
-	enableDevelopmentMtddStubs,
 	createDatabaseConnection,
 	setCustomMtddHandler,
 	getCustomMtddHandler,

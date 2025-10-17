@@ -6,6 +6,7 @@
  */
 
 import type { LibraryConfig } from '@/types/config';
+import { logger } from '@/utils/logger';
 
 /**
  * Internal configuration holder
@@ -44,8 +45,8 @@ let hasWarnedAboutEnvFallback = false;
 
 function warnAboutEnvFallback() {
 	if (!hasWarnedAboutEnvFallback) {
-		console.warn(
-			'[knex-mtdd] No configuration provided to InitializeReplication(). ' +
+		logger.warn(
+			'No configuration provided to InitializeReplication(). ' +
 				'Falling back to process.env (deprecated). ' +
 				'Please pass configuration object to InitializeReplication().',
 		);
@@ -56,21 +57,42 @@ function warnAboutEnvFallback() {
 export const config = {
 	get isDevelopment(): boolean {
 		const cfg = getConfig();
+
 		if (cfg?.mtdd?.isDevelopment !== undefined) {
 			return cfg.mtdd.isDevelopment;
 		}
+
 		warnAboutEnvFallback();
+
 		return process.env.NODE_ENV === 'development';
+	},
+
+	get useMtdd(): boolean {
+		const cfg = getConfig();
+
+		if (cfg?.mtdd?.useMtdd !== undefined) {
+			return cfg.mtdd.useMtdd;
+		}
+
+		warnAboutEnvFallback();
+
+		// Default to false - opt-in to gRPC routing
+		// Only enable if explicitly set to '1'
+		return process.env.USE_MTDD === '1';
 	},
 
 	get queryServers(): string[] {
 		const cfg = getConfig();
+
 		if (cfg?.mtdd?.queryServers) {
 			return cfg.mtdd.queryServers;
 		}
+
 		warnAboutEnvFallback();
+
 		// Support old BACKEND_SERVERS env var for backward compatibility
 		const envVar = process.env.QUERY_SERVERS || process.env.BACKEND_SERVERS;
+
 		return process.env.NODE_ENV !== 'development'
 			? JSON.parse(envVar || '[]')
 			: JSON.parse(envVar || '["127.0.0.1"]');
@@ -78,57 +100,74 @@ export const config = {
 
 	get lookupServer(): string {
 		const cfg = getConfig();
+
 		if (cfg?.mtdd?.lookupServer) {
 			return cfg.mtdd.lookupServer;
 		}
+
 		warnAboutEnvFallback();
+
 		const servers =
 			process.env.NODE_ENV !== 'development'
 				? JSON.parse(process.env.LOOKUP_SERVER || '["127.0.0.1"]')
 				: ['127.0.0.1'];
+
 		return servers[0];
 	},
 
 	get databaseEnabled(): boolean {
 		const cfg = getConfig();
+
 		if (cfg?.database?.enabled !== undefined) {
 			return cfg.database.enabled;
 		}
+
 		warnAboutEnvFallback();
+
 		return process.env.ENABLE_DATABASE !== 'false';
 	},
 
 	get databaseConfig() {
 		const cfg = getConfig();
+
 		if (cfg?.database?.config) {
 			return cfg.database.config;
 		}
+
 		warnAboutEnvFallback();
+
 		return JSON.parse(process.env.DB_CONFIG || '{}');
 	},
 
 	get portalInfo() {
 		const cfg = getConfig();
+
 		if (cfg?.portal) {
 			return cfg.portal;
 		}
+
 		warnAboutEnvFallback();
+
 		return JSON.parse(process.env.PortalInfo || '{}');
 	},
 
 	get firebaseConfig() {
 		const cfg = getConfig();
+
 		return cfg?.firebase;
 	},
 
 	get grpcInsecure(): boolean {
 		// Check config first, then env var
 		const cfg = getConfig();
+
 		if (cfg?.mtdd) {
 			// If config provided but no explicit insecure setting, default to false
 			return false;
 		}
+
 		warnAboutEnvFallback();
+
 		return process.env.GRPC_INSECURE === 'true';
 	},
 };

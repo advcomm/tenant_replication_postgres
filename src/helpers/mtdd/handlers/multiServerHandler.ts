@@ -4,8 +4,8 @@
  * Complex routing for multi-server gRPC deployments with tenant shard lookup
  */
 
-import type { MtddMeta, SqlResult } from '@/types/mtdd';
 import { GrpcQueryClient } from '@/services/grpcClient';
+import type { MtddMeta, SqlResult } from '@/types/mtdd';
 import { mtddLogger } from '@/utils/logger';
 
 /**

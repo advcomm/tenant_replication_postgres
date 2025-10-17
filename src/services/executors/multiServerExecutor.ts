@@ -4,17 +4,17 @@
  * Handles query execution for multi-server deployments with various strategies
  */
 
-import { grpcLogger } from '@/utils/logger';
+import { clients, getTenantShard, lookupClient } from '@/services/grpc';
 import { processQueryParameters } from '@/services/grpc/queryUtils';
-import { convertBigIntToString } from '@/services/grpc/utils';
 import {
+	callAllServersAll,
 	callAllServersAny,
 	callAllServersRace,
-	callAllServersAll,
 	callSpecificServerByShard,
 } from '@/services/grpc/serverCalls';
-import { getTenantShard, lookupClient, clients } from '@/services/grpc';
-import type { SqlParameters, GrpcQueryRequest } from '@/types';
+import { convertBigIntToString } from '@/services/grpc/utils';
+import type { GrpcQueryRequest, SqlParameters } from '@/types';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Execute query with default strategy (any)

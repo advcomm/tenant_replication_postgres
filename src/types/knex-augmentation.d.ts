@@ -4,7 +4,6 @@
  * Extends Knex types to include MTDD functionality
  */
 
-import type { Knex } from 'knex';
 import type { MtddMeta } from './mtdd';
 
 declare module 'knex' {

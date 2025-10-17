@@ -4,11 +4,11 @@
  * Automatic gRPC routing for multi-tenant database operations
  */
 
+import { config } from '@/config/configHolder';
 import type { MtddMeta, SqlResult } from '@/types/mtdd';
 import { mtddLogger } from '@/utils/logger';
-import { config } from '@/config/configHolder';
-import { handleSingleServer } from './handlers/singleServerHandler';
 import { handleMultiServer } from './handlers/multiServerHandler';
+import { handleSingleServer } from './handlers/singleServerHandler';
 
 /**
  * Automatic gRPC MTDD Handler

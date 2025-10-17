@@ -1,9 +1,9 @@
 import type { Application } from 'express';
 import type knex from 'knex';
+import { setConfig } from '@/config/configHolder';
 import * as knexHelper from '@/helpers/knexHelper';
 import { createMtddRoutes } from '@/routes';
 import type { LibraryConfig } from '@/types/config';
-import { setConfig } from '@/config/configHolder';
 
 // Export Firebase configuration interface and ActiveClients class for users of this library
 export {
@@ -13,8 +13,8 @@ export {
 
 // Export configuration types for consumers
 export type {
-	LibraryConfig,
 	DatabaseConfig,
+	LibraryConfig,
 	MtddBackendConfig,
 	PortalConfig,
 } from '@/types/config';
@@ -32,6 +32,7 @@ export type {
  *
  * await InitializeReplication(app, db, {
  *   mtdd: {
+ *     useMtdd: process.env.USE_MTDD === '1',
  *     queryServers: ['query-server1:50051', 'query-server2:50051'],
  *     lookupServer: 'lookup:50054',
  *     isDevelopment: false

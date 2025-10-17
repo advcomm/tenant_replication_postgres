@@ -4,24 +4,24 @@
  * Main interface for executing SQL queries via gRPC query servers
  */
 
-import type { ChannelMessage } from '@/types/api';
-import { IS_SINGLE_SERVER_DEPLOYMENT } from '@/services/grpc/config';
 import {
 	addTenantShard,
+	clients,
 	getTenantShard,
 	listenToChannel as listenToChannelGrpc,
 	lookupClient,
-	clients,
 } from '@/services/grpc';
+import { IS_SINGLE_SERVER_DEPLOYMENT } from '@/services/grpc/config';
+import type { ChannelMessage } from '@/types/api';
 import { grpcLogger } from '@/utils/logger';
-import { executeSingleServer } from './executors/singleServerExecutor';
 import {
 	executeMultiServer,
-	executeMultiServerRace,
-	executeMultiServerAny,
 	executeMultiServerAll,
 	executeMultiServerAllSettled,
+	executeMultiServerAny,
+	executeMultiServerRace,
 } from './executors/multiServerExecutor';
+import { executeSingleServer } from './executors/singleServerExecutor';
 
 /**
  * @deprecated Use executeQuery instead

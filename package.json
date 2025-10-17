@@ -49,7 +49,6 @@
 	"dependencies": {
 		"@advcomm/utils": "^1.10.0",
 		"@grpc/grpc-js": "^1.13.4",
-		"@grpc/proto-loader": "^0.8.0",
 		"express": "^4.21.2",
 		"firebase-admin": "^13.4.0",
 		"google-protobuf": "^4.0.0",
@@ -59,7 +58,7 @@
 		"zod": "^4.1.12"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.2.6",
+		"@biomejs/biome": "^2.2.6",
 		"@types/express": "^4.17.21",
 		"@types/google-protobuf": "^3.15.12",
 		"@types/node": "^22.13.9",
@@ -76,8 +75,7 @@
 	},
 	"lint-staged": {
 		"*.{ts,js,json}": [
-			"biome format --write",
-			"biome lint --write"
+			"biome check --write"
 		]
 	}
 }

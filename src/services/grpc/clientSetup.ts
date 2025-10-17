@@ -5,14 +5,14 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
-import {
-	createGrpcCredentials,
-	createGrpcConnectionOptions,
-	queryServers,
-} from './config';
 import { config } from '@/config/configHolder';
 import { DBServiceClient } from '@/generated/db_grpc_pb';
 import { LookupServiceClient } from '@/generated/lookup_grpc_pb';
+import {
+	createGrpcConnectionOptions,
+	createGrpcCredentials,
+	queryServers,
+} from './config';
 
 // Check for insecure mode
 const useInsecure = config.grpcInsecure;

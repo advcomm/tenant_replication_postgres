@@ -5,17 +5,17 @@
  * Now using generated protobuf types!
  */
 
-import { grpcLogger } from '@/utils/logger';
+import type { QueryResponse } from '@/generated/db_pb';
+import { clients } from '@/services/grpc/clientSetup';
+import { queryServers } from '@/services/grpc/config';
+import {
+	convertQueryResponse,
+	createQueryRequest,
+} from '@/services/grpc/protoConverters';
 import { processQueryParameters } from '@/services/grpc/queryUtils';
 import { convertBigIntToString } from '@/services/grpc/utils';
-import { queryServers } from '@/services/grpc/config';
-import { clients } from '@/services/grpc/clientSetup';
-import {
-	createQueryRequest,
-	convertQueryResponse,
-} from '@/services/grpc/protoConverters';
-import type { SqlParameters, GrpcQueryRequest } from '@/types';
-import type { QueryResponse } from '@/generated/db_pb';
+import type { GrpcQueryRequest, SqlParameters } from '@/types';
+import { grpcLogger } from '@/utils/logger';
 
 /**
  * Execute query on single server

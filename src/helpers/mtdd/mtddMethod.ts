@@ -5,8 +5,8 @@
  * This eliminates duplication between QueryBuilder and Raw query implementations
  */
 
-import type { MtddMeta, KnexQueryObject } from '@/types';
 import { MTDD_DEFAULTS } from '@/constants/mtdd';
+import type { KnexQueryObject, MtddMeta } from '@/types';
 import { setupChainEndDetection } from './patching/chainEndDetection';
 
 /**

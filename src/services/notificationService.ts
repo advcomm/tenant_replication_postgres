@@ -5,11 +5,11 @@
  */
 
 import type { Knex } from 'knex';
-import type { ChannelMessage } from '@/types/api';
+import { config } from '@/config/configHolder';
 import ActiveClients from '@/helpers/clients';
 import { GrpcQueryClient } from '@/services/grpcClient';
+import type { ChannelMessage } from '@/types/api';
 import { notificationLogger } from '@/utils/logger';
-import { config } from '@/config/configHolder';
 
 /**
  * Notification Service

@@ -4,7 +4,7 @@
  * Patches Knex Raw queries to support MTDD functionality
  */
 
-import type { MtddMeta, SqlResult } from '@/types/mtdd';
+import type { SqlResult } from '@/types/mtdd';
 import { mtddLogger } from '@/utils/logger';
 import { createMtddMethod } from '../mtddMethod';
 

@@ -5,8 +5,8 @@
  * Supports token in Authorization header or query parameter
  */
 
-import type { Response, NextFunction } from 'express';
 import { decodeAccessToken } from '@advcomm/utils/dist/helper/authenticationHelper';
+import type { NextFunction, Response } from 'express';
 import type { AuthenticatedRequest } from '@/types/api';
 import { apiLogger } from '@/utils/logger';
 

@@ -8,9 +8,9 @@ import admin from 'firebase-admin';
 import { notificationLogger } from '@/utils/logger';
 import { getFirebaseInstance } from './firebaseClient';
 import {
+	getMobileClients,
 	getMobileDeviceCount,
 	getMobileFcmToken,
-	getMobileClients,
 } from './mobileClients';
 
 /**

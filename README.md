@@ -92,6 +92,7 @@ const db = knex({
 // Configure the library
 const config: LibraryConfig = {
   mtdd: {
+    useMtdd: process.env.USE_MTDD === '1',  // Enable gRPC routing
     queryServers: ['grpc-server1:50051', 'grpc-server2:50051'],
     lookupServer: 'lookup-server:50054',
     isDevelopment: process.env.NODE_ENV !== 'production',
@@ -154,6 +155,112 @@ const allTenants = await db('tenants')
 // Force add tenant shard mapping
 await db.raw('SELECT 1')
   .mtdd('new-tenant', null, 'addTenantShard');
+```
+
+---
+
+## 🔄 Environment-Driven Transport Configuration
+
+The library supports **transparent fallback** between local PostgreSQL and gRPC routing based on environment configuration. This allows you to develop locally and deploy to production **without any code changes**.
+
+### The Developer Experience Goal
+
+```typescript
+// Application code (SAME in development and production)
+const users = await db('users')
+  .where('active', true)
+  .mtdd(tenantId, tenantType)  // Developer always provides tenant explicitly
+  .select();
+```
+
+### Configuration: Local vs gRPC
+
+**Development (Local PostgreSQL):**
+
+```bash
+# .env.development
+USE_MTDD=0  # or omit this variable (default is 0)
+DATABASE_URL=postgresql://localhost:5432/mydb
+```
+
+**Result:** `.mtdd()` executes on your local Knex connection (standard `pg` driver). No gRPC servers needed!
+
+**Production (gRPC Routing):**
+
+```bash
+# .env.production
+USE_MTDD=1
+QUERY_SERVERS=["query-server1:50051","query-server2:50051"]
+LOOKUP_SERVER=lookup-server:50054
+```
+
+**Result:** `.mtdd()` routes through gRPC servers with full multi-tenant support and sharding.
+
+### Configuration API
+
+```typescript
+import { InitializeReplication } from '@advcomm/tenant_replication_postgres';
+
+// Development: Use local PostgreSQL
+await InitializeReplication(app, db, {
+  mtdd: {
+    useMtdd: false,  // Disable gRPC, use local pg
+    isDevelopment: true
+  }
+});
+
+// Production: Enable gRPC routing
+await InitializeReplication(app, db, {
+  mtdd: {
+    useMtdd: process.env.USE_MTDD === '1',  // Enable/disable gRPC routing
+    queryServers: ['server1:50051', 'server2:50051'],  // Required if useMtdd=true
+    lookupServer: 'lookup:50054',  // Required if useMtdd=true
+    isDevelopment: false
+  },
+  database: {
+    enabled: true,
+    config: knexConfig
+  }
+});
+```
+
+### Runtime Behavior
+
+| `USE_MTDD` | Behavior | Use Case |
+|------------|----------|----------|
+| `0` or unset | Executes on local Knex connection (standard PostgreSQL via `pg` driver) | Local development, testing |
+| `1` | Routes through gRPC servers with tenant sharding and multi-server support | Production, staging |
+
+### Error Handling
+
+If `USE_MTDD=1` but gRPC servers are not configured:
+
+```typescript
+// Runtime error will be thrown with helpful message
+Error: QUERY_SERVERS configuration required when USE_MTDD=1
+```
+
+This ensures you can't accidentally deploy without proper gRPC configuration.
+
+### Protocol Compatibility
+
+The library ensures that the **response format is identical** regardless of transport:
+
+```typescript
+// Both return the exact same format
+const local = await db('users').select();    // USE_MTDD=0
+const grpc = await db('users').mtdd(id).select();  // USE_MTDD=1
+
+// QueryBuilder queries return arrays
+console.log(local);  // [{ id: 1, name: 'Alice' }, ...]
+console.log(grpc);   // [{ id: 1, name: 'Alice' }, ...]  ← Same!
+
+// Raw queries return pg result object
+const localRaw = await db.raw('SELECT * FROM users');
+const grpcRaw = await db.raw('SELECT * FROM users').mtdd(id);
+
+console.log(localRaw);  // { rows: [...], rowCount: 2, command: 'SELECT' }
+console.log(grpcRaw);   // { rows: [...], rowCount: 2, command: 'SELECT' }  ← Same!
 ```
 
 ---

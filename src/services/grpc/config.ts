@@ -5,15 +5,15 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
+import { config } from '@/config/configHolder';
 import {
-	GRPC_SSL_CERTIFICATE,
-	SSL_TARGET_OVERRIDE,
 	DEFAULT_AUTHORITY,
 	GRPC_MAX_MESSAGE_SIZE,
+	GRPC_SSL_CERTIFICATE,
+	SSL_TARGET_OVERRIDE,
 } from '@/constants/grpc';
 import type { GrpcConnectionOptions } from '@/types/grpc';
 import { grpcLogger } from '@/utils/logger';
-import { config } from '@/config/configHolder';
 
 // gRPC query servers configuration from config holder
 export const queryServers = config.queryServers;

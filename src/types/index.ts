@@ -36,9 +36,9 @@ export type {
 export type { MtddMeta, SqlResult } from './mtdd';
 // SQL query and parameter types
 export type {
+	KnexQueryObject,
 	SqlParameters,
 	SqlParameterValue,
-	KnexQueryObject,
 } from './sql';
 export { isKnexQueryObject } from './sql';
 // gRPC client types now imported from generated protobuf files:

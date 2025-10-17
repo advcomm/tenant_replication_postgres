@@ -4,20 +4,19 @@
  * Central export point for all MTDD-related helper functions
  */
 
-export { enableDevelopmentMtddStubs } from './developmentStubs';
+export {
+	getCustomMtddHandler,
+	performMtddAutoActions,
+	setCustomMtddHandler,
+} from './actions/performMtddActions';
 export { grpcMtddHandler } from './grpcHandler';
 export {
 	createMtddMethodWrapper,
 	createReRunMethodWrapper,
 } from './methodWrappers';
-export { enableMtddRouting } from './routing';
 export {
-	performMtddAutoActions,
-	setCustomMtddHandler,
-	getCustomMtddHandler,
-} from './actions/performMtddActions';
-export {
-	createMtddMethod,
 	createMtddMetadata,
+	createMtddMethod,
 	setupToSQLTracking,
 } from './mtddMethod';
+export { enableMtddRouting, getKnexInstance } from './routing';

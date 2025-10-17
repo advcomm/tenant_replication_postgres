@@ -4,8 +4,6 @@
  * Type definitions for SQL parameters and query objects
  */
 
-import type { Knex } from 'knex';
-
 /**
  * SQL parameter value types
  */

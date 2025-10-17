@@ -4,9 +4,9 @@
  * Patches promise chain-ending methods to auto-execute MTDD queries
  */
 
+import type { KnexQueryObject } from '@/types';
 import { mtddLogger } from '@/utils/logger';
 import { performMtddAutoActions } from '../actions/performMtddActions';
-import type { KnexQueryObject } from '@/types';
 
 /**
  * Setup chain-end detection for MTDD queries
