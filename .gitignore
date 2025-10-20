@@ -66,3 +66,5 @@ node_modules/
 # These are auto-generated from proto/*.proto files
 # Run 'npm run proto:generate' to regenerate them
 src/generated/
+
+.git-*
