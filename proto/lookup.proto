@@ -1,26 +1,24 @@
 syntax = "proto3";
 
-package lookup;
+package mtdd;
 
 // Lookup service for tenant-to-shard mapping
-// Maps tenant names to specific database shards
 service LookupService {
-	// Get the shard location for a tenant
-	rpc GetTenantShard(TenantRequest) returns (TenantResponse);
-
-	// Register a new tenant and assign to a shard
-	rpc AddTenantShard(TenantRequest) returns (TenantResponse);
+  // Get the shard location for a tenant
+  rpc GetTenantShard (TenantRequest) returns (TenantResponse);
+  
+  // Register a new tenant and assign to a shard
+  rpc AddTenantShard (TenantRequest) returns (TenantResponse);
 }
 
 // Request message for tenant operations
 message TenantRequest {
-	string tenant_name = 1; // Tenant identifier
-	int32 tenant_type = 2; // Tenant type/category
+  string tenant_name = 1;
+  int32 tenant_type = 2;
 }
 
 // Response message with tenant location
 message TenantResponse {
-	string tenant_id = 1; // Tenant identifier
-	int32 shard_index = 2; // Which shard/server the tenant is on
+  string tenant_id = 1;
+  int32 shard_index = 2;
 }
-

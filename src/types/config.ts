@@ -61,6 +61,15 @@ export interface MtddBackendConfig {
 	 * @default false (reads from process.env.NODE_ENV)
 	 */
 	isDevelopment?: boolean;
+
+	/**
+	 * Use insecure gRPC connections (no SSL/TLS)
+	 * Set to true for local development/testing
+	 * Set to false for production with proper SSL certificates
+	 *
+	 * @default false (reads from process.env.GRPC_INSECURE)
+	 */
+	grpcInsecure?: boolean;
 }
 
 /**

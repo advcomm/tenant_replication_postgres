@@ -5,12 +5,12 @@
  */
 
 export { listenToChannel } from './channelListener';
-export { clients, lookupClient } from './clientSetup';
+export { getClients, getLookupClient } from './clientSetup';
 export {
 	createGrpcConnectionOptions,
 	createGrpcCredentials,
-	IS_SINGLE_SERVER_DEPLOYMENT,
-	queryServers,
+	getQueryServers,
+	isSingleServerDeployment,
 } from './config';
 export { addTenantShard, getTenantShard } from './lookupService';
 export {

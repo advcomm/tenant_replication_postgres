@@ -96,8 +96,10 @@ export function enableMtddRouting(_knexInstance: Knex): void {
 	try {
 		// Note: performMtddAutoActions and setupChainEndDetection are now imported from separate modules
 
-		// PATCH QueryBuilder - Access it through the knex client
-		const QueryBuilder = require('knex/lib/query/querybuilder');
+		// PATCH QueryBuilder - Get it from the actual Knex instance to ensure we patch the right prototype
+		// This is critical when library and user have different Knex versions/installations
+		const dummyQuery = _knexInstance('dummy_table').select('*');
+		const QueryBuilder = dummyQuery.constructor;
 		const qbProto = QueryBuilder.prototype;
 
 		if (!qbProto.mtdd) {
@@ -260,7 +262,7 @@ export function enableMtddRouting(_knexInstance: Knex): void {
 		}
 
 		// PATCH Raw queries for comprehensive MTDD support
-		patchRawQueries();
+		patchRawQueries(_knexInstance);
 
 		mtddLogger.info(
 			'MTDD routing enabled successfully - All PostgreSQL client methods are now MTDD-aware',

@@ -6,12 +6,12 @@
 
 import {
 	addTenantShard,
-	clients,
+	getClients,
+	getLookupClient,
 	getTenantShard,
+	isSingleServerDeployment,
 	listenToChannel as listenToChannelGrpc,
-	lookupClient,
 } from '@/services/grpc';
-import { IS_SINGLE_SERVER_DEPLOYMENT } from '@/services/grpc/config';
 import type { ChannelMessage } from '@/types/api';
 import { grpcLogger } from '@/utils/logger';
 import {
@@ -51,7 +51,7 @@ export async function executeQuery(
 	valuesOrBindings: Record<string, any> | any[] = {},
 	tenantName?: string,
 ): Promise<unknown> {
-	if (IS_SINGLE_SERVER_DEPLOYMENT) {
+	if (isSingleServerDeployment()) {
 		return executeSingleServer(query, valuesOrBindings);
 	}
 
@@ -89,7 +89,7 @@ export async function executeQueryAll(
 	valuesOrBindings: Record<string, any> | any[] = {},
 ): Promise<unknown[]> {
 	// Single server optimization
-	if (IS_SINGLE_SERVER_DEPLOYMENT) {
+	if (isSingleServerDeployment()) {
 		grpcLogger.debug('executeQueryAll - using single server result');
 		const singleResult = await executeQuery(query, valuesOrBindings);
 		return [singleResult];
@@ -107,7 +107,7 @@ export async function executeQueryAllSettled(
 	valuesOrBindings: Record<string, any> | any[] = {},
 ): Promise<PromiseSettledResult<unknown>[]> {
 	// Single server optimization
-	if (IS_SINGLE_SERVER_DEPLOYMENT) {
+	if (isSingleServerDeployment()) {
 		grpcLogger.debug('executeQueryAllSettled - using single server result');
 		try {
 			const result = await executeQuery(query, valuesOrBindings);
@@ -127,6 +127,7 @@ export async function getTenantShardInfo(
 	tenantName: string,
 	lookupType: number = 1,
 ): Promise<number> {
+	const lookupClient = getLookupClient();
 	return getTenantShard(lookupClient, tenantName, lookupType);
 }
 
@@ -137,6 +138,7 @@ export async function addTenantShardMapping(
 	tenantName: string,
 	tenantType: number = 1,
 ): Promise<unknown> {
+	const lookupClient = getLookupClient();
 	return addTenantShard(lookupClient, tenantName, tenantType);
 }
 
@@ -147,6 +149,7 @@ export function listenToChannel(
 	channel: string,
 	callback: (msg: ChannelMessage) => void,
 ): void {
+	const clients = getClients();
 	listenToChannelGrpc(clients, channel, callback);
 }
 

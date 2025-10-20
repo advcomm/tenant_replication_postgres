@@ -4,7 +4,7 @@
  * Handles query execution for multi-server deployments with various strategies
  */
 
-import { clients, getTenantShard, lookupClient } from '@/services/grpc';
+import { getClients, getLookupClient, getTenantShard } from '@/services/grpc';
 import { processQueryParameters } from '@/services/grpc/queryUtils';
 import {
 	callAllServersAll,
@@ -38,6 +38,9 @@ export async function executeMultiServer(
 	};
 
 	try {
+		const clients = getClients();
+		const lookupClient = getLookupClient();
+
 		if (tenantName !== undefined && tenantName !== null) {
 			grpcLogger.debug({ tenantName }, 'Looking up shard for tenant');
 			const shardId = await getTenantShard(lookupClient, tenantName, 1);
@@ -82,6 +85,7 @@ export async function executeMultiServerRace(
 	};
 
 	try {
+		const clients = getClients();
 		grpcLogger.debug('Executing query on all servers using Promise.race');
 		return await callAllServersRace(clients, request);
 	} catch (error: unknown) {
@@ -116,6 +120,7 @@ export async function executeMultiServerAny(
 	};
 
 	try {
+		const clients = getClients();
 		grpcLogger.debug('Executing query on all servers using Promise.any');
 		return await callAllServersAny(clients, request);
 	} catch (error: unknown) {
@@ -150,6 +155,7 @@ export async function executeMultiServerAll(
 	};
 
 	try {
+		const clients = getClients();
 		grpcLogger.debug('Executing query on all servers using Promise.all');
 		return await callAllServersAll(clients, request);
 	} catch (error: unknown) {
@@ -184,6 +190,7 @@ export async function executeMultiServerAllSettled(
 	};
 
 	try {
+		const clients = getClients();
 		grpcLogger.debug('Executing query on all servers using Promise.allSettled');
 
 		// Use callAllServersAll which handles proto conversion

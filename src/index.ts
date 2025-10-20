@@ -54,6 +54,10 @@ export async function InitializeReplication(
 		setConfig(config);
 	}
 
+	// Enable MTDD routing on the user-provided Knex instance
+	// This patches the Knex QueryBuilder and Raw prototypes to add .mtdd() method
+	knexHelper.enableMtddRoutingForUserDb(dbConnection);
+
 	const mtddRoutes = createMtddRoutes(dbConnection);
 	app.use('/mtdd', mtddRoutes);
 }

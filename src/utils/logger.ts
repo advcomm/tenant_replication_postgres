@@ -2,10 +2,20 @@
  * Logging Utility
  *
  * Centralized logging with Pino for structured, high-performance logs
+ *
+ * NOTE: Uses process.env directly to avoid circular dependencies with config module
  */
 
 import pino from 'pino';
-import { config } from '@/config/configHolder';
+
+/**
+ * Detect development mode from environment
+ * This is safe to do at module load time as it only reads process.env
+ */
+const isDevelopment =
+	process.env.NODE_ENV === 'development' ||
+	process.env.NODE_ENV === 'dev' ||
+	!process.env.NODE_ENV;
 
 /**
  * Base logger configuration
@@ -13,10 +23,10 @@ import { config } from '@/config/configHolder';
  */
 export const logger = pino({
 	name: 'knex-mtdd', // 🎯 Library identifier - stands out in logs!
-	level: config.isDevelopment ? 'debug' : 'info',
+	level: isDevelopment ? 'debug' : 'info',
 
 	// Use pretty formatting in development for better readability
-	transport: config.isDevelopment
+	transport: isDevelopment
 		? {
 				target: 'pino-pretty',
 				options: {

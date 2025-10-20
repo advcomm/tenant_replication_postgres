@@ -4,15 +4,20 @@
  * Patches Knex Raw queries to support MTDD functionality
  */
 
+import type { Knex } from 'knex';
 import type { SqlResult } from '@/types/mtdd';
 import { mtddLogger } from '@/utils/logger';
 import { createMtddMethod } from '../mtddMethod';
 
 /**
  * Patch Raw query prototype with MTDD support
+ * @param knexInstance - The Knex instance to get the Raw class from
  */
-export function patchRawQueries(): void {
-	const Raw = require('knex/lib/raw');
+export function patchRawQueries(knexInstance: Knex): void {
+	// Get Raw class from the actual Knex instance to ensure we patch the right prototype
+	// This is critical when library and user have different Knex versions/installations
+	const dummyRaw = knexInstance.raw('SELECT 1');
+	const Raw = dummyRaw.constructor;
 	const rawProto = Raw.prototype;
 
 	if (!rawProto.mtdd) {

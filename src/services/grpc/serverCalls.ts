@@ -6,7 +6,7 @@
  */
 
 import type { DBServiceClient } from '@/generated/db_grpc_pb';
-import type { QueryResponse } from '@/generated/db_pb';
+import type { StoredProcResponse } from '@/generated/db_pb';
 import type { GrpcQueryRequest } from '@/types/grpc';
 import { convertQueryResponse, createQueryRequest } from './protoConverters';
 
@@ -29,7 +29,7 @@ export async function callAllServersRace(
 		return new Promise((resolve, reject) => {
 			client.executeQuery(
 				protoRequest,
-				(error: Error | null, response: QueryResponse) => {
+				(error: Error | null, response: StoredProcResponse) => {
 					if (error) {
 						reject(error);
 					} else if (response) {
@@ -66,7 +66,7 @@ export async function callAllServersAny(
 		return new Promise((resolve, reject) => {
 			client.executeQuery(
 				protoRequest,
-				(error: Error | null, response: QueryResponse) => {
+				(error: Error | null, response: StoredProcResponse) => {
 					if (error) {
 						reject(error);
 					} else if (response) {
@@ -107,7 +107,7 @@ export async function callAllServersAll(
 		return new Promise((resolve, reject) => {
 			client.executeQuery(
 				protoRequest,
-				(error: Error | null, response: QueryResponse) => {
+				(error: Error | null, response: StoredProcResponse) => {
 					if (error) {
 						reject(error);
 					} else if (response) {
@@ -148,7 +148,7 @@ export async function callSpecificServer(
 	return new Promise((resolve, reject) => {
 		selectedClient.executeQuery(
 			protoRequest,
-			(error: Error | null, response: QueryResponse) => {
+			(error: Error | null, response: StoredProcResponse) => {
 				if (error) {
 					reject(error);
 				} else if (response) {
@@ -188,7 +188,7 @@ export async function callSpecificServerByShard(
 	return new Promise((resolve, reject) => {
 		selectedClient.executeQuery(
 			protoRequest,
-			(error: Error | null, response: QueryResponse) => {
+			(error: Error | null, response: StoredProcResponse) => {
 				if (error) {
 					reject(error);
 				} else if (response) {

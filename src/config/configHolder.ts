@@ -93,9 +93,20 @@ export const config = {
 		// Support old BACKEND_SERVERS env var for backward compatibility
 		const envVar = process.env.QUERY_SERVERS || process.env.BACKEND_SERVERS;
 
-		return process.env.NODE_ENV !== 'development'
-			? JSON.parse(envVar || '[]')
-			: JSON.parse(envVar || '["127.0.0.1"]');
+		if (!envVar) {
+			return process.env.NODE_ENV === 'development' ? [] : [];
+		}
+
+		// Try JSON parse first, then fall back to comma-separated
+		try {
+			return JSON.parse(envVar);
+		} catch {
+			// Parse as comma-separated string
+			return envVar
+				.split(',')
+				.map((s) => s.trim())
+				.filter((s) => s);
+		}
 	},
 
 	get lookupServer(): string {
@@ -107,12 +118,20 @@ export const config = {
 
 		warnAboutEnvFallback();
 
-		const servers =
-			process.env.NODE_ENV !== 'development'
-				? JSON.parse(process.env.LOOKUP_SERVER || '["127.0.0.1"]')
-				: ['127.0.0.1'];
+		const envVar = process.env.LOOKUP_SERVER;
 
-		return servers[0];
+		if (!envVar) {
+			return '127.0.0.1:50054';
+		}
+
+		// Try JSON parse first (array format), then fall back to simple string
+		try {
+			const parsed = JSON.parse(envVar);
+			return Array.isArray(parsed) ? parsed[0] : parsed;
+		} catch {
+			// Simple string format
+			return envVar;
+		}
 	},
 
 	get databaseEnabled(): boolean {
@@ -161,9 +180,14 @@ export const config = {
 		// Check config first, then env var
 		const cfg = getConfig();
 
+		if (cfg?.mtdd?.grpcInsecure !== undefined) {
+			return cfg.mtdd.grpcInsecure;
+		}
+
+		// If config provided but no grpcInsecure setting, check environment
 		if (cfg?.mtdd) {
-			// If config provided but no explicit insecure setting, default to false
-			return false;
+			// Config exists but no grpcInsecure - check env var
+			return process.env.GRPC_INSECURE === 'true';
 		}
 
 		warnAboutEnvFallback();

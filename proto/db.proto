@@ -1,50 +1,37 @@
 syntax = "proto3";
 
-package db;
+package DB;
 
-// Database Query Service
-// Executes SQL queries and provides channel listening for real-time updates
+// Database service definition
 service DBService {
-	// Execute a SQL query with parameters
-	rpc ExecuteQuery(QueryRequest) returns (QueryResponse);
-
-	// Listen to PostgreSQL NOTIFY/LISTEN channel (streaming)
-	rpc ListenToChannel(ChannelRequest) returns (stream ChannelMessage);
+  // Execute a database query with parameters
+  rpc executeQuery (StoredProcRequest) returns (StoredProcResponse);
+  
+  // Listen to a PostgreSQL NOTIFY channel (server-side streaming)
+  rpc listenToChannel (ChannelRequest) returns (stream ChannelResponse);
 }
 
-// Query execution request
-message QueryRequest {
-	string query = 1; // SQL query string
-	repeated string params = 2; // Query parameters (stringified for flexibility)
-	string name = 3; // Optional query name for logging/tracking
-	bool is_function = 4; // Whether this is a function call
+// Request to execute a stored procedure or query
+message StoredProcRequest {
+  string query = 1;        // SQL query or stored procedure call
+  repeated string params = 2; // Query parameters as JSON strings
 }
 
-// Query execution response
-// Matches PostgreSQL QueryResult structure
-message QueryResponse {
-	repeated Row rows = 1; // Result rows
-	int32 row_count = 2; // Number of rows affected
-	string command = 3; // SQL command type (SELECT, INSERT, etc.)
-	int64 oid = 4; // Object ID (for INSERT operations)
+// Response from query execution
+message StoredProcResponse {
+  string result = 1;  // JSON-encoded query result
+  int32 rowCount = 2; // Number of rows affected
+  string command = 3; // SQL command that was executed
 }
 
-// Single row of data
-message Row {
-	// Fields stored as JSON string for flexibility
-	// This matches pg's row structure which can have any fields
-	string json_data = 1;
-}
-
-// Channel subscription request
+// Request to listen to a PostgreSQL channel
 message ChannelRequest {
-	string channel = 1; // PostgreSQL channel name
+  string channelName = 1; // Name of the channel to listen to
 }
 
-// Channel notification message (streamed)
-message ChannelMessage {
-	string channel = 1; // Channel name
-	string payload = 2; // Notification payload (usually JSON)
-	string timestamp = 3; // Timestamp of notification
+// Response with notification data from a channel
+message ChannelResponse {
+  string channelName = 1; // Name of the channel
+  string data = 2;        // Notification payload (JSON string)
+  string timestamp = 3;   // ISO 8601 timestamp of the notification
 }
-

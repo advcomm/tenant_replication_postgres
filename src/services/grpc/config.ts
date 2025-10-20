@@ -15,30 +15,48 @@ import {
 import type { GrpcConnectionOptions } from '@/types/grpc';
 import { grpcLogger } from '@/utils/logger';
 
-// gRPC query servers configuration from config holder
-export const queryServers = config.queryServers;
+/**
+ * Get query servers
+ */
+export function getQueryServers(): string[] {
+	return config.queryServers;
+}
 
-// Single server deployment detection
-export const IS_SINGLE_SERVER_DEPLOYMENT = queryServers.length === 1;
+/**
+ * Detect single server deployment
+ */
+export function isSingleServerDeployment(): boolean {
+	return getQueryServers().length === 1;
+}
 
-// Log configuration in non-development mode
-if (!config.isDevelopment) {
-	grpcLogger.info(
-		{ serverCount: queryServers.length, servers: queryServers },
-		'gRPC query servers configuration loaded',
-	);
-	grpcLogger.info(
-		{
-			mode: IS_SINGLE_SERVER_DEPLOYMENT
-				? 'Single Server (Simplified)'
-				: 'Multi-Server (MTDD)',
-			isSingleServer: IS_SINGLE_SERVER_DEPLOYMENT,
-		},
-		'Deployment mode configured',
-	);
+// Log configuration when first accessed
+let configLogged = false;
 
-	if (IS_SINGLE_SERVER_DEPLOYMENT) {
-		grpcLogger.info('Single query server detected - using simplified routing');
+export function logGrpcConfig(): void {
+	if (!configLogged && !config.isDevelopment) {
+		const servers = getQueryServers();
+		const isSingle = isSingleServerDeployment();
+
+		grpcLogger.info(
+			{ serverCount: servers.length, servers: servers },
+			'gRPC query servers configuration loaded',
+		);
+
+		grpcLogger.info(
+			{
+				mode: isSingle ? 'Single Server (Simplified)' : 'Multi-Server (MTDD)',
+				isSingleServer: isSingle,
+			},
+			'Deployment mode configured',
+		);
+
+		if (isSingle) {
+			grpcLogger.info(
+				'Single query server detected - using simplified routing',
+			);
+		}
+
+		configLogged = true;
 	}
 }
 

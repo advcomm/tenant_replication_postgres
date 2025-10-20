@@ -11,7 +11,22 @@ import {
 // Create database connection using centralized configuration
 function createDatabaseConnection(): Knex {
 	if (!config.databaseEnabled) {
-		throw new Error('Database is disabled');
+		// In production mode when users provide their own db, we don't need internal db
+		// Create a dummy Knex instance that won't actually be used
+		dbLogger.info(
+			'Database disabled - creating dummy Knex instance (user-provided db will be used)',
+		);
+		return knex({
+			client: 'pg',
+			connection: {
+				host: 'dummy',
+				port: 5432,
+				user: 'dummy',
+				password: 'dummy',
+				database: 'dummy',
+			},
+			pool: { min: 0, max: 0 },
+		});
 	}
 
 	const dbCfg = config.databaseConfig;
@@ -150,6 +165,17 @@ declare module 'knex' {
 
 // Create the database instance
 const db = createDatabaseConnection();
+
+/**
+ * Enable MTDD routing on a user-provided Knex instance
+ * This is called by InitializeReplication() to patch the user's db instance
+ *
+ * @param userDb - The user's Knex instance to patch
+ */
+export function enableMtddRoutingForUserDb(userDb: Knex): void {
+	dbLogger.info('Enabling MTDD routing on user-provided Knex instance');
+	enableMtddRouting(userDb);
+}
 
 export {
 	db,

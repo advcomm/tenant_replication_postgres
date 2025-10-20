@@ -5,9 +5,9 @@
  * Now using generated protobuf types!
  */
 
-import type { QueryResponse } from '@/generated/db_pb';
-import { clients } from '@/services/grpc/clientSetup';
-import { queryServers } from '@/services/grpc/config';
+import type { StoredProcResponse } from '@/generated/db_pb';
+import { getClients } from '@/services/grpc/clientSetup';
+import { getQueryServers } from '@/services/grpc/config';
 import {
 	convertQueryResponse,
 	createQueryRequest,
@@ -25,6 +25,9 @@ export async function executeSingleServer(
 	query: string,
 	valuesOrBindings: SqlParameters = {},
 ): Promise<unknown> {
+	const queryServers = getQueryServers();
+	const clients = getClients();
+
 	grpcLogger.debug(
 		{ server: queryServers[0] },
 		'Simplified routing - executing on single query server',
@@ -54,7 +57,7 @@ export async function executeSingleServer(
 		return new Promise((resolve, reject) => {
 			selectedClient.executeQuery(
 				protoRequest,
-				(error: Error | null, response: QueryResponse) => {
+				(error: Error | null, response: StoredProcResponse) => {
 					if (error) {
 						grpcLogger.error(
 							{ error: error.message },

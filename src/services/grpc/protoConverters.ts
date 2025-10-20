@@ -2,9 +2,10 @@
  * Protobuf Type Converters
  *
  * Converts between internal types and generated protobuf types
+ * Updated to match actual MTDD and MTDDLookup service proto definitions
  */
 
-import { QueryRequest, type QueryResponse, type Row } from '@/generated/db_pb';
+import { StoredProcRequest, type StoredProcResponse } from '@/generated/db_pb';
 import { TenantRequest, type TenantResponse } from '@/generated/lookup_pb';
 import type { SqlParameters, SqlParameterValue } from '@/types';
 import type { GrpcProcedureRequest, GrpcQueryRequest } from '@/types/grpc';
@@ -50,10 +51,12 @@ export function convertParametersToProto(params: SqlParameters): string[] {
 }
 
 /**
- * Create a QueryRequest protobuf message from GrpcQueryRequest
+ * Create a StoredProcRequest protobuf message from GrpcQueryRequest
  */
-export function createQueryRequest(request: GrpcQueryRequest): QueryRequest {
-	const protoRequest = new QueryRequest();
+export function createQueryRequest(
+	request: GrpcQueryRequest,
+): StoredProcRequest {
+	const protoRequest = new StoredProcRequest();
 	protoRequest.setQuery(request.query);
 	protoRequest.setParamsList(
 		convertParametersToProto((request.params as SqlParameters) || []),
@@ -62,49 +65,44 @@ export function createQueryRequest(request: GrpcQueryRequest): QueryRequest {
 }
 
 /**
- * Create a QueryRequest protobuf message from GrpcProcedureRequest
+ * Create a StoredProcRequest protobuf message from GrpcProcedureRequest
  */
 export function createProcedureRequest(
 	request: GrpcProcedureRequest,
-): QueryRequest {
-	const protoRequest = new QueryRequest();
-	protoRequest.setQuery(''); // No query for procedures
+): StoredProcRequest {
+	const protoRequest = new StoredProcRequest();
+	protoRequest.setQuery(request.name); // Stored procedure name as query
 	protoRequest.setParamsList(
 		convertParametersToProto((request.params as SqlParameters) || []),
 	);
-	protoRequest.setName(request.name);
-	protoRequest.setIsFunction(request.isFunction);
 	return protoRequest;
 }
 
 /**
- * Convert protobuf Row to JavaScript object
+ * Convert protobuf StoredProcResponse to JavaScript result
+ * The response contains result as JSON string
  */
-export function convertProtoRowToObject(
-	protoRow: Row,
-): Record<string, unknown> {
+export function convertQueryResponse(response: StoredProcResponse): unknown {
 	try {
-		const jsonData = protoRow.getJsonData();
-		return JSON.parse(jsonData);
-	} catch (_error) {
-		// If parsing fails, return empty object
-		return {};
+		const resultString = response.getResult();
+
+		// Parse the JSON result
+		const rows = resultString ? JSON.parse(resultString) : [];
+
+		// Return result in pg-compatible format
+		return {
+			rows: Array.isArray(rows) ? rows : [rows],
+			rowCount: response.getRowcount(),
+			command: response.getCommand(),
+		};
+	} catch (error) {
+		// If parsing fails, return empty result
+		return {
+			rows: [],
+			rowCount: 0,
+			command: '',
+		};
 	}
-}
-
-/**
- * Convert protobuf QueryResponse to JavaScript result
- */
-export function convertQueryResponse(response: QueryResponse): unknown {
-	const rows = response.getRowsList().map(convertProtoRowToObject);
-
-	// Return result in pg-compatible format
-	return {
-		rows,
-		rowCount: response.getRowCount(),
-		command: response.getCommand(),
-		oid: response.getOid(),
-	};
 }
 
 /**

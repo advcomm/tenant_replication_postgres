@@ -8,7 +8,7 @@
 import type { DBServiceClient } from '@/generated/db_grpc_pb';
 import {
 	ChannelRequest,
-	type ChannelMessage as ProtoChannelMessage,
+	type ChannelResponse as ProtoChannelResponse,
 } from '@/generated/db_pb';
 import type { ChannelMessage } from '@/types/api';
 import { grpcLogger } from '@/utils/logger';
@@ -36,17 +36,17 @@ export function listenToChannel(
 
 	// Create protobuf request
 	const protoRequest = new ChannelRequest();
-	protoRequest.setChannel(channel);
+	protoRequest.setChannelname(channel);
 
 	// Start streaming
 	const stream = selectedClient.listenToChannel(protoRequest);
 
-	stream.on('data', (protoMessage: ProtoChannelMessage) => {
+	stream.on('data', (protoMessage: ProtoChannelResponse) => {
 		try {
 			// Convert protobuf message to our internal format
 			const msg: ChannelMessage = {
-				payload: protoMessage.getPayload(),
-				channel: protoMessage.getChannel(),
+				payload: protoMessage.getData(),
+				channel: protoMessage.getChannelname(),
 				timestamp: protoMessage.getTimestamp(),
 			};
 			callback(msg);
