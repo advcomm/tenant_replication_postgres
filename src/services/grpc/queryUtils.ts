@@ -40,10 +40,10 @@ export function processNamedParameters(
 	const parameterRegex = /\$\{(\w+)\}/g;
 	const foundParameters: string[] = [];
 	const params: unknown[] = [];
-	let match;
+	const match = parameterRegex.exec(query);
 
 	// Extract all parameter names from the query
-	while ((match = parameterRegex.exec(query)) !== null) {
+	while (match !== null) {
 		foundParameters.push(match[1]);
 	}
 

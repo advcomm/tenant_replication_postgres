@@ -33,7 +33,6 @@ export interface KnexQueryObject {
 	// biome-ignore lint/suspicious/noExplicitAny: Knex toSQL accepts variable arguments and returns Sql object
 	toSQL: (...args: any[]) => any;
 
-	// biome-ignore lint/suspicious/noExplicitAny: MTDD method accepts flexible input types
 	mtdd: (
 		// biome-ignore lint/suspicious/noExplicitAny: Can be string, number, or MtddMeta object
 		tenantIdOrMeta?: string | number | any,
