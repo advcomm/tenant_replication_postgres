@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package DB;
+
+// Database service definition
+service DBService {
+  // Execute a database query with parameters
+  rpc executeQuery (StoredProcRequest) returns (StoredProcResponse);
+  
+  // Listen to a PostgreSQL NOTIFY channel (server-side streaming)
+  rpc listenToChannel (ChannelRequest) returns (stream ChannelResponse);
+}
+
+// Request to execute a stored procedure or query
+message StoredProcRequest {
+  string query = 1;        // SQL query or stored procedure call
+  repeated string params = 2; // Query parameters as JSON strings
+}
+
+// Response from query execution
+message StoredProcResponse {
+  string result = 1;  // JSON-encoded query result
+  int32 rowCount = 2; // Number of rows affected
+  string command = 3; // SQL command that was executed
+}
+
+// Request to listen to a PostgreSQL channel
+message ChannelRequest {
+  string channelName = 1; // Name of the channel to listen to
+}
+
+// Response with notification data from a channel
+message ChannelResponse {
+  string channelName = 1; // Name of the channel
+  string data = 2;        // Notification payload (JSON string)
+  string timestamp = 3;   // ISO 8601 timestamp of the notification
+}

@@ -1,54 +1,81 @@
 {
-  "name": "@advcomm/tenant_replication_postgres",
-  "version": "1.0.5",
-  "description": "Multi-tenant database replication library with MTDD routing and gRPC support",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist/",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "start": "node --env-file=.env dist/index.js",
-    "dev": "env-cmd -f .env nodemon src/index.ts",
-    "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "test:local": "npm run build && npm pack"
-  },
-  "keywords": [
-    "multi-tenant",
-    "database",
-    "replication",
-    "grpc",
-    "knex",
-    "postgres",
-    "tenant-routing"
-  ],
-  "author": "dev1@hostingcontroller.com",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/advcomm/tenant_replication_postgres.git"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "dependencies": {
-    "@advcomm/utils": "^1.10.0",
-    "@grpc/grpc-js": "^1.13.4",
-    "express": "^4.21.2",
-    "firebase-admin": "^13.4.0",
-    "knex": "^3.1.0",
-    "pg": "^8.16.3"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.13.9",
-    "env-cmd": "^11.0.0",
-    "nodemon": "^3.1.9",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.8.2"
-  }
+	"name": "@advcomm/tenant_replication_postgres",
+	"version": "1.0.2",
+	"description": "Multi-tenant database replication library with MTDD routing and gRPC support",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist/",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"start": "node --env-file=.env dist/index.js",
+		"dev": "env-cmd -f .env nodemon src/index.ts",
+		"build": "npm run proto:generate && tsc && tsc-alias",
+		"prepublishOnly": "npm run build",
+		"test:local": "npm run build && npm pack",
+		"proto:generate": "node scripts/generate-proto.js",
+		"lint": "biome lint .",
+		"lint:fix": "biome lint --write .",
+		"format": "biome format .",
+		"format:fix": "biome format --write .",
+		"check": "biome check .",
+		"check:fix": "biome check --write .",
+		"check:unsafe": "biome check --write --unsafe .",
+		"prepare": "husky"
+	},
+	"keywords": [
+		"multi-tenant",
+		"database",
+		"replication",
+		"grpc",
+		"knex",
+		"postgres",
+		"tenant-routing"
+	],
+	"author": "dev1@hostingcontroller.com",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/advcomm/tenant_replication_postgres.git"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"dependencies": {
+		"@advcomm/utils": "^1.10.0",
+		"@grpc/grpc-js": "^1.13.4",
+		"express": "^4.21.2",
+		"firebase-admin": "^13.4.0",
+		"google-protobuf": "^4.0.0",
+		"knex": "^3.1.0",
+		"pg": "^8.16.3",
+		"pino": "^10.0.0",
+		"zod": "^4.1.12"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.6",
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/git": "^10.0.1",
+		"@types/express": "^4.17.21",
+		"@types/google-protobuf": "^3.15.12",
+		"@types/node": "^22.13.9",
+		"env-cmd": "^11.0.0",
+		"grpc_tools_node_protoc_ts": "^5.3.3",
+		"grpc-tools": "^1.13.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.4",
+		"nodemon": "^3.1.9",
+		"pino-pretty": "^13.1.2",
+		"ts-node": "^10.9.2",
+		"tsc-alias": "^1.8.16",
+		"tsconfig-paths": "^4.2.0",
+		"typescript": "^5.8.2"
+	},
+	"lint-staged": {
+		"*.{ts,js,json}": [
+			"npm run check:fix"
+		]
+	}
 }
