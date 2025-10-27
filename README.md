@@ -1218,6 +1218,127 @@ npm run dev
 
 ---
 
+## 📦 Publishing & Release Process
+
+### Automated Publishing
+
+This package uses [semantic-release](https://semantic-release.gitbook.io/) for fully automated versioning and publishing to npm.
+
+#### How It Works
+
+1. **Commit to main branch** with conventional commit messages
+2. **GitHub Actions runs** on every push
+3. **semantic-release analyzes** commits to determine version bump
+4. **Automatic publishing** if version change is needed
+
+#### Commit Message Format
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+```bash
+# Patch release (1.0.2 → 1.0.3)
+git commit -m "fix: resolve authentication issue"
+git commit -m "perf: optimize database queries"
+git commit -m "patch: update dependency versions"
+
+# Minor release (1.0.2 → 1.1.0)
+git commit -m "feat: add user profile management"
+git commit -m "feat(mtdd): implement caching layer"
+
+# Major release (1.0.2 → 2.0.0)
+git commit -m "feat!: change API interface"
+git commit -m "BREAKING CHANGE: remove deprecated methods"
+```
+
+#### Types & Scope
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Types:**
+- `feat` → Minor version bump (new features)
+- `fix` → Patch version bump (bug fixes)
+- `perf` → Patch version bump (performance improvements)
+- `docs` → No version bump (documentation only)
+- `style` → No version bump (formatting)
+- `refactor` → No version bump (code restructuring)
+- `test` → No version bump (tests)
+- `chore` → No version bump (build/config)
+- `BREAKING CHANGE` → Major version bump
+
+**Scope** (optional):
+- `feat(mtdd):` - MTDD routing features
+- `fix(grpc):` - gRPC fixes
+- `feat(api):` - API endpoint changes
+
+#### Examples
+
+```bash
+# Feature - triggers minor release (1.0.2 → 1.1.0)
+git commit -m "feat: add multi-server query aggregation"
+
+# Breaking change - triggers major release (1.0.2 → 2.0.0)
+git commit -m "feat!: redesign mtdd routing API
+BREAKING CHANGE: .mtdd() method now requires tenantType parameter"
+
+# Bug fix - triggers patch release (1.0.2 → 1.0.3)
+git commit -m "fix: resolve race condition in concurrent queries"
+
+# No release triggered
+git commit -m "docs: update README with examples"
+git commit -m "chore: update dependencies"
+```
+
+#### What Gets Published
+
+When a release is triggered, semantic-release automatically:
+
+- ✅ Updates version in `package.json` and `package-lock.json`
+- ✅ Generates `CHANGELOG.md` with release notes
+- ✅ Creates Git tag (e.g., `v1.1.0`)
+- ✅ Publishes to npm as `@advcomm/tenant_replication_postgres`
+- ✅ Creates GitHub Release with auto-generated notes
+- ✅ Commits changes back to repository
+
+#### Manual Override
+
+If you need to force a release, you can manually trigger the workflow:
+
+1. Go to GitHub Actions → "Release Package"
+2. Click "Run workflow"
+3. Select branch: `main`
+4. Click "Run workflow"
+
+#### Requirements
+
+- `NPM_TOKEN` secret must be configured in GitHub repository settings
+- Commits must be pushed to `main` branch
+- Conventional commit messages required
+
+#### Troubleshooting
+
+**No release triggered?**
+- Check commit message format
+- Verify no merge conflicts
+- Check GitHub Actions logs for errors
+
+**Wrong version bumped?**
+- Review commit messages on main branch
+- Check `.releaserc.json` configuration
+- Ensure semantic-release is analyzing commits correctly
+
+**Workflow failed?**
+- Verify `NPM_TOKEN` is set in GitHub Secrets
+- Check npm package permissions for `@advcomm` scope
+- Review GitHub Actions logs for specific errors
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
