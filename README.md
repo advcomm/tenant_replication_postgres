@@ -109,7 +109,9 @@ const config: LibraryConfig = {
   },
   portal: {
     portalId: 1,
-    tenantColumnName: 'TenantID',
+    tenantColumnName: 'YourTenantIDColumn',
+    tenantInsertProc: 'your_tenant_insert_procedure',
+    portalName: 'YourPortalName',
   },
   firebase: {
     type: 'service_account',
@@ -304,15 +306,19 @@ interface LibraryConfig {
 }
 
 interface MtddBackendConfig {
-  queryServers: string[];     // ['server1:50051', 'server2:50051']
-  lookupServer: string;        // 'lookup:50054'
+  useMtdd?: boolean;           // Enable gRPC routing (false = local pg, true = gRPC)
+  queryServers?: string[];     // ['server1:50051', 'server2:50051']
+  lookupServer?: string;       // 'lookup:50054'
   isDevelopment?: boolean;     // Enable dev stubs
   grpcInsecure?: boolean;      // Use insecure gRPC (dev only)
 }
 
 interface PortalConfig {
-  portalId: number;
-  tenantColumnName: string;    // e.g., 'TenantID'
+  portalId?: number;                     // Portal identifier number
+  tenantColumnName?: string;             // Tenant column name (e.g., 'TenantID', 'entityid')
+  tenantInsertProc?: string;             // Stored procedure for creating tenant
+  portalName?: string;                   // Portal name (e.g., 'MyPortal')
+  [key: string]: unknown;                 // Allow any other portal fields
 }
 ```
 
@@ -693,7 +699,9 @@ const config: LibraryConfig = {
   // Portal/Tenant Configuration
   portal: {
     portalId: 1,
-    tenantColumnName: 'VendorID', // Your tenant column name
+    tenantColumnName: 'YourTenantIDColumn',       // Your tenant column name
+    tenantInsertProc: 'your_tenant_insert_procedure', // Your tenant creation procedure
+    portalName: 'YourPortalName',                 // Your portal name
   },
 
   // Firebase Configuration (optional)

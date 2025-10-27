@@ -34,7 +34,7 @@ export class NotificationService {
 			: JSON.parse(msg.payload);
 
 		const dataTenantID =
-			data[(this.portalInfo?.TenantColumnName as string) ?? ''] ||
+			data[(this.portalInfo?.tenantColumnName as string) ?? ''] ||
 			data.TenantID;
 
 		// TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
