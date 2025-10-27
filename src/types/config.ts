@@ -74,9 +74,22 @@ export interface MtddBackendConfig {
 
 /**
  * Portal Configuration
+ * Matches backend PortalInfo shape for compatibility
  */
 export interface PortalConfig {
+	/** Tenant column name in database (e.g., 'entityid', 'TenantID', 'VendorID') */
 	tenantColumnName?: string;
+
+	/** Stored procedure name for creating tenant with role */
+	tenantInsertProc?: string;
+
+	/** Portal name identifier (e.g., 'VendorPortal') */
+	portalName?: string;
+
+	/** Portal identifier number */
+	portalId?: number;
+
+	/** Allow any other portal-specific fields for backward compatibility */
 	[key: string]: unknown;
 }
 
