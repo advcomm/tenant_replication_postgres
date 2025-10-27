@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.1...v1.0.2) (2025-10-27)
+
+
+### Bug Fixes
+
+* portal configs and npm pgk fix ([#4](https://github.com/advcomm/tenant_replication_postgres/issues/4)) ([a4687ca](https://github.com/advcomm/tenant_replication_postgres/commit/a4687cacedf9be05aad59dcfd1a42cf8484924ea))
+
 ## [1.0.1](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.0...v1.0.1) (2025-10-27)
 
 
