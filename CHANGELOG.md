@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.5...v1.0.6) (2025-10-27)
+
+
+### Bug Fixes
+
+* tags mismatch ([5f432b4](https://github.com/advcomm/tenant_replication_postgres/commit/5f432b422bfe78d3c4deccb8ff52341dc1864cc9))
+
 ## [1.0.2](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.1...v1.0.2) (2025-10-27)
 
 
