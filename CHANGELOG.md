@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/advcomm/tenant_replication_postgres/compare/v1.1.0...v1.1.1) (2025-10-30)
+
+
+### Bug Fixes
+
+* omitted client option from db configs ([5c45655](https://github.com/advcomm/tenant_replication_postgres/commit/5c456559ff05f303503cef81f5b984774703d714))
+
 # [1.1.0](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.6...v1.1.0) (2025-10-30)
 
 
