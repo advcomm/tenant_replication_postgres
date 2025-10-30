@@ -5,22 +5,8 @@
  * (Future: Will replace process.env usage - see LIBRARY_DESIGN_DECISIONS.md)
  */
 
+import type { Knex } from 'knex';
 import type { FirebaseConfig } from '@/helpers/clients/types';
-
-/**
- * Database Configuration
- */
-export interface DatabaseConfig {
-	host: string;
-	port: number;
-	user: string;
-	password: string;
-	database: string;
-	pool?: {
-		min: number;
-		max: number;
-	};
-}
 
 /**
  * MTDD Configuration
@@ -42,7 +28,7 @@ export interface MtddBackendConfig {
 	 * List of gRPC query server addresses (host:port)
 	 * Required when useMtdd=true
 	 *
-	 * @example ['query-server1:50051', 'query-server2:50051']
+	 * @example ['<query-server-host1>:<query-server-port>', '<query-server-host2>:<query-server-port>']
 	 */
 	queryServers?: string[];
 
@@ -50,7 +36,7 @@ export interface MtddBackendConfig {
 	 * gRPC lookup server address (host:port)
 	 * Required when useMtdd=true
 	 *
-	 * @example 'lookup-server:50054'
+	 * @example '<lookup-server-host>:<lookup-server-port>'
 	 */
 	lookupServer?: string;
 
@@ -94,15 +80,13 @@ export interface PortalConfig {
 }
 
 /**
- * Library Configuration (Future API)
- * This will be used when refactoring away from process.env
+ * Library Configuration
  */
 export interface LibraryConfig {
-	mtdd?: MtddBackendConfig;
-	database?: {
-		enabled: boolean;
-		config: DatabaseConfig;
-	};
+	mtdd: MtddBackendConfig;
 	firebase?: FirebaseConfig;
 	portal?: PortalConfig;
 }
+
+// Minimal DatabaseConfig for consumers who want the library to own Knex
+export interface DatabaseConfig extends Knex.Config {}

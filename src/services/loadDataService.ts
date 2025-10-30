@@ -11,9 +11,9 @@ import { apiLogger } from '@/utils/logger';
  * Parameters for loading data
  */
 export interface LoadDataParams {
-	tableName?: string;
+	tableName: string;
 	lastUpdated?: string | number;
-	tenantId?: string | number;
+	tenantId: string | number;
 	userId?: string;
 	roles?: string[];
 	deviceId?: string;
@@ -27,36 +27,11 @@ export interface LoadDataResult {
 }
 
 /**
- * Validation error when parameters are missing or invalid
- */
-export class LoadDataValidationError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = 'LoadDataValidationError';
-	}
-}
-
-/**
  * LoadData Service
  * Handles fetching data from database get_* functions
  */
 export class LoadDataService {
 	constructor(private db: Knex) {}
-
-	/**
-	 * Validate load data parameters
-	 */
-	private validateParams(params: LoadDataParams): void {
-		if (!params.tableName) {
-			throw new LoadDataValidationError(
-				'Missing required parameter: tableName',
-			);
-		}
-
-		if (!params.tenantId) {
-			throw new LoadDataValidationError('Missing required parameter: tenantId');
-		}
-	}
 
 	/**
 	 * Load data for a tenant from a database function
@@ -65,9 +40,6 @@ export class LoadDataService {
 	 * @returns Query result with rows
 	 */
 	async loadData(params: LoadDataParams): Promise<LoadDataResult> {
-		// Validate parameters
-		this.validateParams(params);
-
 		// Log the request
 		apiLogger.info(
 			{
@@ -86,7 +58,7 @@ export class LoadDataService {
 		// Execute the database query using authenticated tenant ID
 		// Note: We call get_<tableName> function with (lastUpdated, tenantId)
 		const result = await this.db
-			.raw(`SELECT * FROM get_${params.tableName}(?, ?)`, [
+			.raw(`SELECT * FROM get_${params.tableName}($1::bigint, $2::text)`, [
 				lastUpdatedParam,
 				params.tenantId,
 			])

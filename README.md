@@ -28,11 +28,7 @@ npm install @advcomm/tenant_replication_postgres
 
 ### Dependencies
 
-The library requires these peer dependencies:
-
-```bash
-npm install express knex pg firebase-admin @advcomm/utils
-```
+- Your app should have Express. Knex is provided and managed by this library.
 
 ---
 
@@ -67,19 +63,17 @@ npm install express knex pg firebase-admin @advcomm/utils
 
 ## ⚡ Quick Start
 
-### 1. Initialize the Library
+### 1. Initialize the Library (Library-owned Knex)
 
 ```typescript
 import express from 'express';
-import knex from 'knex';
-import { InitializeReplication } from '@advcomm/tenant_replication_postgres';
-import type { LibraryConfig } from '@advcomm/tenant_replication_postgres';
+import { InitializeReplicationWithDb } from '@advcomm/tenant_replication_postgres';
+import type { DatabaseConfig, LibraryConfig } from '@advcomm/tenant_replication_postgres';
 
 const app = express();
 
-// Create Knex instance
-const db = knex({
-  client: 'pg',
+// Provide DB config; the library creates and patches Knex for you
+const dbConfig: DatabaseConfig = {
   connection: {
     host: 'localhost',
     port: 5432,
@@ -87,25 +81,18 @@ const db = knex({
     password: 'password',
     database: 'mydb',
   },
-});
+  debug: false,
+};
 
 // Configure the library
 const config: LibraryConfig = {
   mtdd: {
-    useMtdd: process.env.USE_MTDD === '1',  // Enable gRPC routing
-    queryServers: ['grpc-server1:50051', 'grpc-server2:50051'],
-    lookupServer: 'lookup-server:50054',
-    isDevelopment: process.env.NODE_ENV !== 'production',
-  },
-  database: {
-    enabled: true,
-    config: {
-      host: 'localhost',
-      port: 5432,
-      user: 'postgres',
-      password: 'password',
-      database: 'mydb',
-    },
+    useMtdd: false, // Set true to enable gRPC
+    // When useMtdd: true, you must set:
+    // queryServers: ['grpc-server1:50051', 'grpc-server2:50051'],
+    // lookupServer: 'lookup-server:50054',
+    isDevelopment: false,
+    grpcInsecure: false,
   },
   portal: {
     portalId: 1,
@@ -121,8 +108,8 @@ const config: LibraryConfig = {
   },
 };
 
-// Initialize with configuration
-await InitializeReplication(app, db, config);
+// Initialize and receive the patched Knex instance
+const db = await InitializeReplicationWithDb(app, dbConfig, config);
 
 app.listen(3000, () => {
   console.log('Server running with MTDD support');
@@ -161,9 +148,9 @@ await db.raw('SELECT 1')
 
 ---
 
-## 🔄 Environment-Driven Transport Configuration
+## 🔄 Transport Configuration (Config-Only)
 
-The library supports **transparent fallback** between local PostgreSQL and gRPC routing based on environment configuration. This allows you to develop locally and deploy to production **without any code changes**.
+The library transparently routes between local PostgreSQL and gRPC based on configuration (no env fallbacks). Your application code remains the same.
 
 ### The Developer Experience Goal
 
@@ -175,54 +162,23 @@ const users = await db('users')
   .select();
 ```
 
-### Configuration: Local vs gRPC
+### Local vs gRPC
 
-**Development (Local PostgreSQL):**
-
-```bash
-# .env.development
-USE_MTDD=0  # or omit this variable (default is 0)
-DATABASE_URL=postgresql://localhost:5432/mydb
-```
-
-**Result:** `.mtdd()` executes on your local Knex connection (standard `pg` driver). No gRPC servers needed!
-
-**Production (gRPC Routing):**
-
-```bash
-# .env.production
-USE_MTDD=1
-QUERY_SERVERS=["query-server1:50051","query-server2:50051"]
-LOOKUP_SERVER=lookup-server:50054
-```
-
-**Result:** `.mtdd()` routes through gRPC servers with full multi-tenant support and sharding.
+- Local PostgreSQL: `mtdd.useMtdd = false` → `.mtdd()` executes on the local connection.
+- gRPC Routing: `mtdd.useMtdd = true` → requires `mtdd.queryServers` and `mtdd.lookupServer`.
 
 ### Configuration API
 
 ```typescript
-import { InitializeReplication } from '@advcomm/tenant_replication_postgres';
-
-// Development: Use local PostgreSQL
-await InitializeReplication(app, db, {
+await InitializeReplicationWithDb(app, dbConfig, {
   mtdd: {
-    useMtdd: false,  // Disable gRPC, use local pg
-    isDevelopment: true
-  }
-});
-
-// Production: Enable gRPC routing
-await InitializeReplication(app, db, {
-  mtdd: {
-    useMtdd: process.env.USE_MTDD === '1',  // Enable/disable gRPC routing
-    queryServers: ['server1:50051', 'server2:50051'],  // Required if useMtdd=true
-    lookupServer: 'lookup:50054',  // Required if useMtdd=true
-    isDevelopment: false
+    useMtdd: true,
+    queryServers: ['server1:50051', 'server2:50051'],
+    lookupServer: 'lookup:50054',
+    isDevelopment: false,
+    grpcInsecure: false,
   },
-  database: {
-    enabled: true,
-    config: knexConfig
-  }
+  portal: { portalId: 1, tenantColumnName: '...', tenantInsertProc: '...', portalName: '...' },
 });
 ```
 
@@ -235,11 +191,11 @@ await InitializeReplication(app, db, {
 
 ### Error Handling
 
-If `USE_MTDD=1` but gRPC servers are not configured:
+If `mtdd.useMtdd === true` but gRPC servers are not configured:
 
 ```typescript
 // Runtime error will be thrown with helpful message
-Error: QUERY_SERVERS configuration required when USE_MTDD=1
+Error: No query servers configured. Please provide queryServers in configuration.
 ```
 
 This ensures you can't accidentally deploy without proper gRPC configuration.
@@ -269,56 +225,53 @@ console.log(grpcRaw);   // { rows: [...], rowCount: 2, command: 'SELECT' }  ← 
 
 ## 📚 Complete API Reference
 
-### InitializeReplication
+### InitializeReplicationWithDb
 
-Main entry point to set up MTDD routing and API endpoints.
+Creates a Knex instance, patches it with `.mtdd()`, mounts routes, and returns the instance.
 
 ```typescript
-function InitializeReplication(
+function InitializeReplicationWithDb(
   app: Express.Application,
-  dbConnection: Knex,
+  dbConfig: DatabaseConfig,
   config?: LibraryConfig
-): Promise<void>
+): Promise<Knex>
 ```
 
-**Parameters:**
+Parameters:
 - `app` - Express application instance
-- `dbConnection` - Knex database connection
-- `config` - Optional library configuration (recommended)
-
-**What it does:**
-1. Configures MTDD routing for Knex
-2. Sets up gRPC clients for query servers
-3. Mounts `/mtdd` routes (Load endpoint, SSE events)
-4. Enables real-time notifications
+- `dbConfig` - Database connection settings used by the library to create Knex
+- `config` - Library configuration (MTDD, portal, firebase)
 
 ### Configuration Types
 
 ```typescript
 interface LibraryConfig {
   mtdd?: MtddBackendConfig;
-  database?: {
-    enabled: boolean;
-    config?: DatabaseConfig;
-  };
   portal?: PortalConfig;
   firebase?: FirebaseConfig;
 }
 
+interface DatabaseConfig {
+  connection:
+    | string
+    | { host?: string; port?: number; user?: string; password?: string; database?: string };
+  debug?: boolean;
+}
+
 interface MtddBackendConfig {
-  useMtdd?: boolean;           // Enable gRPC routing (false = local pg, true = gRPC)
-  queryServers?: string[];     // ['server1:50051', 'server2:50051']
-  lookupServer?: string;       // 'lookup:50054'
-  isDevelopment?: boolean;     // Enable dev stubs
-  grpcInsecure?: boolean;      // Use insecure gRPC (dev only)
+  useMtdd?: boolean;            // false = local pg, true = gRPC
+  queryServers?: string[];      // Required when useMtdd = true
+  lookupServer?: string;        // Required when useMtdd = true
+  isDevelopment?: boolean;
+  grpcInsecure?: boolean;
 }
 
 interface PortalConfig {
-  portalId?: number;                     // Portal identifier number
-  tenantColumnName?: string;             // Tenant column name (e.g., 'TenantID', 'entityid')
-  tenantInsertProc?: string;             // Stored procedure for creating tenant
-  portalName?: string;                   // Portal name (e.g., 'MyPortal')
-  [key: string]: unknown;                 // Allow any other portal fields
+  portalId?: number;
+  tenantColumnName?: string;
+  tenantInsertProc?: string;
+  portalName?: string;
+  [key: string]: unknown;
 }
 ```
 
@@ -717,35 +670,9 @@ const config: LibraryConfig = {
 await InitializeReplication(app, db, config);
 ```
 
-### Environment Variables (Fallback)
+### Environment Variables
 
-If you don't provide configuration, the library falls back to environment variables:
-
-```bash
-# MTDD Configuration
-BACKEND_SERVERS="server1:50051,server2:50051"
-LOOKUP_SERVER="lookup:50054"
-NODE_ENV="production"
-GRPC_INSECURE="false"
-
-# Database Configuration
-DB_HOST="localhost"
-DB_PORT="5432"
-DB_USER="postgres"
-DB_PASSWORD="password"
-DB_NAME="database"
-
-# Portal Configuration
-PORTAL_ID="1"
-TENANT_COLUMN_NAME="TenantID"
-
-# Firebase Configuration
-FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
-# OR
-FIREBASE_SERVICE_ACCOUNT_PATH="./firebase-credentials.json"
-```
-
-**⚠️ Note**: Using environment variables is deprecated. Prefer passing `LibraryConfig` object.
+No env fallbacks are used by the library. Provide configuration via `LibraryConfig` and `DatabaseConfig`.
 
 ---
 
@@ -1014,25 +941,18 @@ This generates TypeScript types in `src/generated/` (committed to repo).
 
 ## 🧩 Integration Examples
 
-### Express.js Application
+### Express.js Application (Recommended Flow)
 
 ```typescript
 import express from 'express';
-import knex from 'knex';
-import { InitializeReplication } from '@advcomm/tenant_replication_postgres';
+import { InitializeReplicationWithDb } from '@advcomm/tenant_replication_postgres';
 
 const app = express();
 app.use(express.json());
 
-const db = knex({
-  client: 'pg',
-  connection: process.env.DATABASE_URL,
-});
-
-await InitializeReplication(app, db, {
+const db = await InitializeReplicationWithDb(app, { connection: process.env.DATABASE_URL }, {
   mtdd: {
-    queryServers: process.env.GRPC_SERVERS?.split(',') || [],
-    lookupServer: process.env.LOOKUP_SERVER || '',
+    useMtdd: false,
   },
 });
 

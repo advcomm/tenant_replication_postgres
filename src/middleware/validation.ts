@@ -69,6 +69,7 @@ export function validateQuery(schema: ZodSchema) {
 					{ errors: error.issues },
 					'Query parameter validation failed',
 				);
+
 				res.status(400).json(formatZodError(error));
 			} else {
 				apiLogger.error({ error }, 'Unexpected validation error');
@@ -98,6 +99,7 @@ export function validateBody(schema: ZodSchema) {
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				apiLogger.warn({ errors: error.issues }, 'Body validation failed');
+
 				res.status(400).json(formatZodError(error));
 			} else {
 				apiLogger.error({ error }, 'Unexpected validation error');
@@ -130,6 +132,7 @@ export function validateParams(schema: ZodSchema) {
 					{ errors: error.issues },
 					'Path parameter validation failed',
 				);
+
 				res.status(400).json(formatZodError(error));
 			} else {
 				apiLogger.error({ error }, 'Unexpected validation error');
