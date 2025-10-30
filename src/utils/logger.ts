@@ -37,12 +37,6 @@ export const logger = pino({
 				},
 			}
 		: undefined,
-
-	// Default fields included in every log
-	base: {
-		library: 'tenant_replication_postgres',
-		version: '1.0.2',
-	},
 });
 
 /**
