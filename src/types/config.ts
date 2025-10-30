@@ -89,4 +89,4 @@ export interface LibraryConfig {
 }
 
 // Minimal DatabaseConfig for consumers who want the library to own Knex
-export interface DatabaseConfig extends Knex.Config {}
+export interface DatabaseConfig extends Omit<Knex.Config, 'client'> {}
