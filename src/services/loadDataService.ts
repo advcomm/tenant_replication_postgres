@@ -58,7 +58,7 @@ export class LoadDataService {
 		// Execute the database query using authenticated tenant ID
 		// Note: We call get_<tableName> function with (lastUpdated, tenantId)
 		const result = await this.db
-			.raw(`SELECT * FROM get_${params.tableName}($1::bigint, $2::text)`, [
+			.raw(`SELECT * FROM get_${params.tableName}(?::bigint, ?::text)`, [
 				lastUpdatedParam,
 				params.tenantId,
 			])
