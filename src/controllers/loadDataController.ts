@@ -38,7 +38,7 @@ export class LoadDataController {
 		const result = await this.loadDataService.loadData({
 			tableName,
 			lastUpdated,
-			tenantId: TenantID,
+			tenantId: String(TenantID),
 			userId: sub,
 			roles,
 			deviceId: deviceId || (req.headers?.deviceid as string),

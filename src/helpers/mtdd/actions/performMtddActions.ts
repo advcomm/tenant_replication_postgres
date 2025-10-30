@@ -33,10 +33,12 @@ export async function performMtddAutoActions(
 	}
 
 	const queryType = queryObject.sql ? 'RAW query' : 'operation';
+
 	mtddLogger.debug(
 		{ queryType, operation: mtddMeta?.operation || 'unknown' },
 		'Auto-appending toSQL() at chain end',
 	);
+
 	mtddLogger.debug({ mtddMeta }, 'MTDD Metadata');
 
 	// Perform special MTDD actions based on metadata
@@ -151,7 +153,7 @@ export async function performMtddAutoActions(
 		if (!knex) {
 			throw new Error(
 				'Knex instance not available for local execution. ' +
-					'Ensure InitializeReplication() was called with a valid Knex connection.',
+					'Ensure the library has been initialized (e.g., InitializeReplicationWithDb) before issuing queries.',
 			);
 		}
 

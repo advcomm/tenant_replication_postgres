@@ -1,5 +1,5 @@
 import { type Knex, knex } from 'knex';
-import { config } from '@/config/configHolder';
+import type { DatabaseConfig } from '@/types/config';
 import type { MtddMeta, SqlResult } from '@/types/mtdd';
 import { dbLogger } from '@/utils/logger';
 import {
@@ -7,75 +7,6 @@ import {
 	getCustomMtddHandler,
 	setCustomMtddHandler,
 } from './mtdd';
-
-// Create database connection using centralized configuration
-function createDatabaseConnection(): Knex {
-	if (!config.databaseEnabled) {
-		// In production mode when users provide their own db, we don't need internal db
-		// Create a dummy Knex instance that won't actually be used
-		dbLogger.info(
-			'Database disabled - creating dummy Knex instance (user-provided db will be used)',
-		);
-		return knex({
-			client: 'pg',
-			connection: {
-				host: 'dummy',
-				port: 5432,
-				user: 'dummy',
-				password: 'dummy',
-				database: 'dummy',
-			},
-			pool: { min: 0, max: 0 },
-		});
-	}
-
-	const dbCfg = config.databaseConfig;
-
-	// Connection settings based on useMtdd (not isDevelopment!)
-	const connection = config.useMtdd
-		? {
-				// gRPC mode: Use dummy connection (won't be used)
-				host: 'grpc-backend',
-				port: 50051,
-				user: 'grpc-user',
-				password: 'not-used',
-				database: 'grpc-routed',
-				// Disable actual connection pooling
-				pool: {
-					min: 0,
-					max: 0,
-				},
-			}
-		: {
-				// Local mode: Use real PostgreSQL connection
-				host: dbCfg.host || 'localhost',
-				port: dbCfg.port || 5432,
-				user: dbCfg.user,
-				password: dbCfg.password,
-				database: dbCfg.database,
-				pool: {
-					min: 2,
-					max: 10,
-				},
-			};
-
-	// Use the simplest possible Knex configuration
-	var result = knex({
-		client: 'pg',
-		connection: connection,
-		debug: config.isDevelopment, // Debug based on isDevelopment
-	});
-
-	// Always enable MTDD routing - it handles both local and gRPC internally
-	dbLogger.info(
-		config.useMtdd
-			? 'USE_MTDD=1 - Queries will route via gRPC'
-			: 'USE_MTDD=0 - Queries will execute on local PostgreSQL',
-	);
-	enableMtddRouting(result);
-
-	return result;
-}
 
 // Extend Knex types to include our enhanced MTDD methods
 declare module 'knex' {
@@ -163,24 +94,55 @@ declare module 'knex' {
 	}
 }
 
-// Create the database instance
-const db = createDatabaseConnection();
+// Internal runtime compatibility guard
+function ensureKnexCompatible(db: unknown): boolean {
+	try {
+		const maybeDb = db as {
+			queryBuilder?: () => unknown;
+			raw?: (sql: string) => unknown;
+		};
+		const qb = maybeDb.queryBuilder?.();
+		const raw = maybeDb.raw?.('select 1');
+		const qbProto = qb && Object.getPrototypeOf(qb);
+		const rawProto = raw && Object.getPrototypeOf(raw);
+		return (
+			!!qbProto &&
+			!!rawProto &&
+			typeof qbProto.where === 'function' &&
+			typeof rawProto.toSQL === 'function'
+		);
+	} catch {
+		return false;
+	}
+}
 
 /**
- * Enable MTDD routing on a user-provided Knex instance
- * This is called by InitializeReplication() to patch the user's db instance
- *
- * @param userDb - The user's Knex instance to patch
+ * Create a Knex instance owned by this library and patch it with MTDD.
+ * Consumers can avoid installing Knex and use the returned instance directly.
  */
-export function enableMtddRoutingForUserDb(userDb: Knex): void {
-	dbLogger.info('Enabling MTDD routing on user-provided Knex instance');
-	enableMtddRouting(userDb);
+export function createPatchedKnex(options: DatabaseConfig): Knex {
+	const db = knex({
+		client: 'pg',
+		...options,
+	});
+
+	if (!ensureKnexCompatible(db)) {
+		dbLogger.error(
+			'Incompatible Knex instance detected. Skipping MTDD patching. Ensure a supported Knex version is used.',
+		);
+
+		return db;
+	}
+
+	dbLogger.info('Enabling MTDD routing on Knex instance');
+
+	enableMtddRouting(db);
+
+	return db;
 }
 
 export {
-	db,
 	enableMtddRouting,
-	createDatabaseConnection,
 	setCustomMtddHandler,
 	getCustomMtddHandler,
 	type MtddMeta,

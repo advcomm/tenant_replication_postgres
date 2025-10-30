@@ -2,8 +2,9 @@ import type { Application } from 'express';
 import type knex from 'knex';
 import { setConfig } from '@/config/configHolder';
 import * as knexHelper from '@/helpers/knexHelper';
+import { createPatchedKnex } from '@/helpers/knexHelper';
 import { createMtddRoutes } from '@/routes';
-import type { LibraryConfig } from '@/types/config';
+import type { DatabaseConfig, LibraryConfig } from '@/types/config';
 
 // Export Firebase configuration interface and ActiveClients class for users of this library
 export {
@@ -20,6 +21,10 @@ export type {
 } from '@/types/config';
 
 /**
+ * Initialize the library by creating a Knex instance from provided DB configs.
+ * Consumers do not need to install or provide Knex; the library owns the instance.
+ * Returns the created and patched Knex instance for application use.
+ *
  * Initialize tenant replication with MTDD support
  *
  * @param app - Express application instance
@@ -37,29 +42,25 @@ export type {
  *     lookupServer: 'lookup:50054',
  *     isDevelopment: false
  *   },
- *   database: {
- *     enabled: true,
- *     config: { host: 'localhost', port: 5432, ... }
- *   }
  * });
  * ```
  */
-export async function InitializeReplication(
+export async function InitializeReplicationWithDb(
 	app: Application,
-	dbConnection: knex.Knex<Record<string, unknown>, unknown[]>,
+	dbConfig: DatabaseConfig,
 	config?: LibraryConfig,
-) {
-	// Store configuration for use throughout the library
+): Promise<knex.Knex<Record<string, unknown>, unknown[]>> {
 	if (config) {
 		setConfig(config);
 	}
 
-	// Enable MTDD routing on the user-provided Knex instance
-	// This patches the Knex QueryBuilder and Raw prototypes to add .mtdd() method
-	knexHelper.enableMtddRoutingForUserDb(dbConnection);
+	const db = createPatchedKnex(dbConfig);
 
-	const mtddRoutes = createMtddRoutes(dbConnection);
+	const mtddRoutes = createMtddRoutes(db as knex.Knex);
+
 	app.use('/mtdd', mtddRoutes);
+
+	return db as knex.Knex;
 }
 
 export default knexHelper;
