@@ -1,6 +1,6 @@
 {
 	"name": "@advcomm/tenant_replication_postgres",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"description": "Multi-tenant database replication library with MTDD routing and gRPC support",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

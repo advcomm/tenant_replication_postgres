@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/advcomm/tenant_replication_postgres/compare/v1.1.1...v1.1.2) (2025-10-30)
+
+
+### Bug Fixes
+
+* raw query binding $ -> ? ([2942378](https://github.com/advcomm/tenant_replication_postgres/commit/294237883fd3914d16fd3f7dc3ad7f3923e6aae5))
+
 ## [1.1.1](https://github.com/advcomm/tenant_replication_postgres/compare/v1.1.0...v1.1.1) (2025-10-30)
 
 
