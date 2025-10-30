@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.6...v1.1.0) (2025-10-30)
+
+
+### Features
+
+* trigger release ([01c67af](https://github.com/advcomm/tenant_replication_postgres/commit/01c67afd80d9c3fe1ef88dfdfc8beb3b8b8afd4e))
+
 ## [1.0.6](https://github.com/advcomm/tenant_replication_postgres/compare/v1.0.5...v1.0.6) (2025-10-27)
 
 
