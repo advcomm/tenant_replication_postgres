@@ -68,3 +68,5 @@ node_modules/
 src/generated/
 
 .git-*
+
+/docs

@@ -7,11 +7,14 @@ import { createMtddRoutes } from '@/routes';
 import type { DatabaseConfig, LibraryConfig } from '@/types/config';
 
 // Export Firebase configuration interface and ActiveClients class for users of this library
-export {
-	default as ActiveClients,
-	FirebaseConfig,
-} from '@/helpers/clients';
-
+export { default as ActiveClients, FirebaseConfig } from '@/helpers/clients';
+// Export API types for consumers
+export type {
+	AuthenticatedRequest,
+	ServerSyncUpdate,
+	SyncChangeRequest,
+	SyncResponse,
+} from '@/types/api';
 // Export configuration types for consumers
 export type {
 	DatabaseConfig,
@@ -58,7 +61,7 @@ export async function InitializeReplicationWithDb(
 
 	const mtddRoutes = createMtddRoutes(db as knex.Knex);
 
-	app.use('/mtdd', mtddRoutes);
+	app.use('/mtdd/sync', mtddRoutes);
 
 	return db as knex.Knex;
 }

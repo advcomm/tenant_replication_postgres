@@ -10,17 +10,19 @@ export type {
 	ChannelMessage,
 	ErrorResponse,
 	LoadDataQuery,
+	NormalizedSyncChange,
+	ProcessSyncChangesParams,
+	ServerSyncUpdate,
 	SuccessResponse,
+	SyncChangeRequest,
+	SyncChangesBody,
+	SyncLoadRequest,
+	SyncResponse,
 	TableChangeNotification,
-	UpdatePayload,
-	UpdateRequest,
+	TableLoadContext,
 } from './api';
 // Configuration types
-export type {
-	LibraryConfig,
-	MtddBackendConfig,
-	PortalConfig,
-} from './config';
+export type { LibraryConfig, MtddBackendConfig, PortalConfig } from './config';
 // gRPC service types
 export type {
 	ChannelRequest,
@@ -34,11 +36,7 @@ export type {
 // MTDD (Multi-Tenant Database Deployment) types
 export type { MtddMeta, SqlResult } from './mtdd';
 // SQL query and parameter types
-export type {
-	KnexQueryObject,
-	SqlParameters,
-	SqlParameterValue,
-} from './sql';
+export type { KnexQueryObject, SqlParameters, SqlParameterValue } from './sql';
 export { isKnexQueryObject } from './sql';
 // gRPC client types now imported from generated protobuf files:
 // - DBServiceClient from '@/generated/db_grpc_pb'

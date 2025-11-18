@@ -1,0 +1,39 @@
+{
+  "name": "@advcomm/tenant-replication-example",
+  "version": "1.0.0",
+  "description": "Example application demonstrating tenant_replication_postgres library usage",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "NODE_ENV=development nodemon --exec 'ts-node --project tsconfig.json -r tsconfig-paths/register src/index.ts'",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "setup:db": "bash scripts/setup-database.sh",
+    "clean:db": "psql -U postgres -d mtdd_dev -f scripts/clean-database.sql",
+    "test:endpoints": "bash scripts/test-endpoints.sh"
+  },
+  "keywords": [
+    "tenant-replication",
+    "multi-tenant",
+    "postgresql",
+    "sync",
+    "example"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@advcomm/tenant_replication_postgres": "file:../..",
+    "express": "^4.21.2",
+    "pino": "^10.0.0",
+    "pino-pretty": "^13.1.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.13.9",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.2"
+  }
+}
+

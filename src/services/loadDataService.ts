@@ -52,8 +52,21 @@ export class LoadDataService {
 			'LoadData request',
 		);
 
-		// Default lastUpdated to current timestamp if not provided
-		const lastUpdatedParam = params.lastUpdated || Date.now() * 1000;
+		// Default lastUpdated to 0 if not provided (0 means get all records)
+		// Use nullish coalescing to allow 0 as a valid value
+		const lastUpdatedParam =
+			params.lastUpdated !== undefined && params.lastUpdated !== null
+				? Number(params.lastUpdated)
+				: 0;
+
+		apiLogger.debug(
+			{
+				lastUpdatedParam,
+				tenantId: params.tenantId,
+				tableName: params.tableName,
+			},
+			'Calling stored procedure',
+		);
 
 		// Execute the database query using authenticated tenant ID
 		// Note: We call get_<tableName> function with (lastUpdated, tenantId)
