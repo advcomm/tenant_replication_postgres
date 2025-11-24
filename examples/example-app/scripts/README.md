@@ -60,15 +60,18 @@ BASE_URL=http://localhost:3000 ./scripts/test-endpoints.sh
 
 ### Users Table
 ```sql
+-- NOTE: Primary keys are client-generated, NOT auto-incrementing
+-- The SDK does NOT create tables or primary key columns
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,  -- Client-generated primary key (NOT SERIAL)
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     age INTEGER,
     tenant_id TEXT NOT NULL,
-    mtds_last_updated_txid BIGINT NOT NULL DEFAULT 0,
-    mtds_device_id INTEGER NOT NULL DEFAULT 0,
-    mtds_deleted_txid BIGINT,
+    mtds_server_ts BIGINT NOT NULL DEFAULT 0,
+    mtds_client_ts BIGINT,
+    mtds_device_id BIGINT NOT NULL DEFAULT 0,
+    mtds_delete_ts BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -76,15 +79,17 @@ CREATE TABLE users (
 
 ### Products Table
 ```sql
+-- NOTE: Primary keys are client-generated, NOT auto-incrementing
 CREATE TABLE products (
-    id SERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,  -- Client-generated primary key (NOT SERIAL)
     name TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
     description TEXT,
     tenant_id TEXT NOT NULL,
-    mtds_last_updated_txid BIGINT NOT NULL DEFAULT 0,
-    mtds_device_id INTEGER NOT NULL DEFAULT 0,
-    mtds_deleted_txid BIGINT,
+    mtds_server_ts BIGINT NOT NULL DEFAULT 0,
+    mtds_client_ts BIGINT,
+    mtds_device_id BIGINT NOT NULL DEFAULT 0,
+    mtds_delete_ts BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -169,7 +169,9 @@ export class SyncService {
 		const row = { ...payload };
 		row[pkColumn] ??= pkValue;
 		row[tenantColumnName] = tenantId; // Always set tenant_id from authenticated request
-		row.mtds_last_updated_txid = serverTxid;
+		row.mtds_server_ts = serverTxid;
+		// Store mtds_client_ts if provided in payload and column exists (optional)
+		// Note: mtds_client_ts is preserved from payload if present
 		row.mtds_device_id = change.deviceId;
 
 		await this.db(change.tableName).insert(row).onConflict(pkColumn).merge(row);
@@ -192,8 +194,8 @@ export class SyncService {
 			.where(pkColumn, pkValue)
 			.where(tenantColumnName, tenantId)
 			.update({
-				mtds_deleted_txid: serverTxid,
-				mtds_last_updated_txid: serverTxid,
+				mtds_delete_ts: serverTxid,
+				mtds_server_ts: serverTxid,
 			});
 	}
 

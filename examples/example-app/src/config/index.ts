@@ -67,6 +67,14 @@ export function getConfig(): AppConfig {
       tenantInsertProc: process.env.TENANT_INSERT_PROC || 'insert_tenant',
       portalName: process.env.PORTAL_NAME || 'ExamplePortal',
     },
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: Number.parseInt(process.env.REDIS_PORT || '6379', 10),
+      password: process.env.REDIS_PASSWORD,
+      db: Number.parseInt(process.env.REDIS_DB || '0', 10),
+      keyPrefix: process.env.REDIS_KEY_PREFIX || 'mtds:',
+      ttl: Number.parseInt(process.env.REDIS_TTL || '3600', 10),
+    },
   };
 
   const config: AppConfig = {
@@ -101,15 +109,15 @@ export function logConfig(config: AppConfig): void {
   console.log(`Port: ${config.port}`);
   console.log('');
 
-   if (config.environment === 'development') {
-     console.log('📦 Development Mode - Local PostgreSQL');
-     const dbName =
-       typeof config.dbConfig.connection === 'object' &&
-       config.dbConfig.connection !== null &&
-       'database' in config.dbConfig.connection
-         ? (config.dbConfig.connection as {database?: string}).database
-         : 'N/A';
-     console.log(`   Database: ${dbName || 'N/A'}`);
+  if (config.environment === 'development') {
+    console.log('📦 Development Mode - Local PostgreSQL');
+    const dbName =
+      typeof config.dbConfig.connection === 'object' &&
+      config.dbConfig.connection !== null &&
+      'database' in config.dbConfig.connection
+        ? (config.dbConfig.connection as {database?: string}).database
+        : 'N/A';
+    console.log(`   Database: ${dbName || 'N/A'}`);
     console.log('   Behavior:');
     console.log('     - Queries go directly to local PostgreSQL');
     console.log('     - .mtdd() calls are no-ops (pass-through)');
@@ -125,5 +133,22 @@ export function logConfig(config: AppConfig): void {
     console.log('     - MTDDLookup determines which shard');
     console.log('     - MTDD services execute on correct shard');
   }
+
+  // Redis configuration
+  if (config.libraryConfig.redis) {
+    console.log('');
+    console.log('🔴 Redis Configuration:');
+    console.log(`   Host: ${config.libraryConfig.redis.host || 'localhost'}`);
+    console.log(`   Port: ${config.libraryConfig.redis.port || 6379}`);
+    console.log(`   DB: ${config.libraryConfig.redis.db || 0}`);
+    console.log(
+      `   Key Prefix: ${config.libraryConfig.redis.keyPrefix || 'mtds:'}`
+    );
+    console.log(`   TTL: ${config.libraryConfig.redis.ttl || 3600}s`);
+    console.log(
+      '   Purpose: Tenant timestamp caching for efficient change detection'
+    );
+  }
+
   console.log('');
 }

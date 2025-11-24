@@ -10,88 +10,105 @@ import { notificationLogger } from '@/utils/logger';
 /**
  * Web Client Manager
  * Manages Server-Sent Events (SSE) connections for web clients
+ * Storage: tenantID -> { deviceId -> Response }
+ * This allows multiple devices per tenant and efficient tenant-based broadcasting
  */
 
 /**
- * Web clients storage: deviceId -> { eventName -> Response }
+ * Web clients storage: tenantID -> { deviceId -> Response }
  */
-const webClients = new Map<string, Map<string, express.Response>>();
+const webClients = new Map<string | number, Map<string, express.Response>>();
 
 /**
- * Get all web clients
+ * Get all web clients (tenant-based map)
  */
-export function getWebClients(): Map<string, Map<string, express.Response>> {
+export function getWebClients(): Map<
+	string | number,
+	Map<string, express.Response>
+> {
 	return webClients;
 }
 
 /**
+ * Get all devices for a specific tenant
+ * @param tenantId - Tenant identifier
+ * @returns Map of deviceId -> Response, or undefined if tenant has no devices
+ */
+export function getTenantDevices(
+	tenantId: string | number,
+): Map<string, express.Response> | undefined {
+	return webClients.get(tenantId);
+}
+
+/**
  * Add a web device event subscription
+ * @param tenantId - Tenant identifier
  * @param deviceId - Unique device identifier
- * @param eventName - Event channel name
  * @param res - Express Response object for SSE
  */
 export function addWebDeviceEvent(
+	tenantId: string | number,
 	deviceId: string,
-	eventName: string,
 	res: express.Response,
 ): void {
-	if (!webClients.has(deviceId)) {
-		webClients.set(deviceId, new Map());
+	if (!webClients.has(tenantId)) {
+		webClients.set(tenantId, new Map());
 	}
-	webClients.get(deviceId)?.set(eventName, res);
+	webClients.get(tenantId)?.set(deviceId, res);
 	notificationLogger.info(
-		{ deviceId, eventName, type: 'web' },
-		'Device registered',
+		{ tenantId, deviceId, type: 'web' },
+		'Device registered for tenant',
 	);
 }
 
 /**
- * Delete a specific event subscription for a device
+ * Delete a device for a tenant
+ * @param tenantId - Tenant identifier
  * @param deviceId - Device identifier
- * @param eventName - Event channel name
  */
-export function deleteWebDeviceEvents(
+export function deleteWebDevice(
+	tenantId: string | number,
 	deviceId: string,
-	eventName: string,
 ): void {
-	const deviceEvents = webClients.get(deviceId);
-	if (deviceEvents) {
-		deviceEvents.delete(eventName);
+	const tenantDevices = webClients.get(tenantId);
+	if (tenantDevices) {
+		tenantDevices.delete(deviceId);
 
-		// Remove device entirely if no events left
-		if (deviceEvents.size === 0) {
-			deleteWebDevice(deviceId);
+		// Remove tenant entry if no devices left
+		if (tenantDevices.size === 0) {
+			webClients.delete(tenantId);
 		}
+
+		notificationLogger.info(
+			{ tenantId, deviceId, type: 'web' },
+			'Device removed from tenant',
+		);
 	}
 }
 
 /**
- * Delete a device and all its subscriptions
- * @param deviceId - Device identifier
+ * Get device count for a tenant
+ * @param tenantId - Tenant identifier
+ * @returns Number of devices for the tenant
  */
-export function deleteWebDevice(deviceId: string): void {
-	webClients.delete(deviceId);
-	notificationLogger.info({ deviceId, type: 'web' }, 'Device removed');
+export function getTenantDeviceCount(tenantId: string | number): number {
+	return webClients.get(tenantId)?.size ?? 0;
 }
 
 /**
- * Get device event subscriptions
- * @param deviceId - Device identifier
+ * Get total number of tenants with active connections
  */
-export function getWebDeviceEvents(
-	deviceId: string,
-): Map<string, express.Response> | undefined {
-	return webClients.get(deviceId);
+export function getTenantCount(): number {
+	return webClients.size;
 }
 
 /**
- * Check if device has a specific event subscription
- * @param deviceId - Device identifier
- * @param eventName - Event channel name
+ * Get total number of devices across all tenants
  */
-export function hasWebDeviceEvent(
-	deviceId: string,
-	eventName: string,
-): boolean {
-	return webClients.get(deviceId)?.has(eventName) ?? false;
+export function getTotalDeviceCount(): number {
+	let total = 0;
+	for (const devices of webClients.values()) {
+		total += devices.size;
+	}
+	return total;
 }

@@ -8,6 +8,7 @@ import type { Knex } from 'knex';
 import { config } from '@/config/configHolder';
 import ActiveClients from '@/helpers/clients';
 import { GrpcQueryClient } from '@/services/grpcClient';
+import type { RedisService } from '@/services/redisService';
 import type { ChannelMessage, JsonMap, ServerEventPayload } from '@/types/api';
 import { ServerEventType, SyncChangeAction } from '@/types/api';
 import { notificationLogger } from '@/utils/logger';
@@ -20,10 +21,12 @@ export class NotificationService {
 	private db: Knex;
 	private portalInfo: Record<string, unknown>;
 	private readonly pkCache = new Map<string, string>();
+	private redisService: RedisService | null;
 
-	constructor(db: Knex) {
+	constructor(db: Knex, redisService?: RedisService | null) {
 		this.db = db;
 		this.portalInfo = config.portalInfo;
+		this.redisService = redisService ?? null;
 	}
 
 	/**
@@ -43,15 +46,6 @@ export class NotificationService {
 			dataRecord.TenantID;
 		const dataTenantID = tenantColumnValue as string | number | undefined;
 
-		// TODO: This is just for the issue of tenantName and ID. will resolve later after discussion.
-		if (dataTenantID !== undefined) {
-			await this.db
-				.raw('SELECT EntityName FROM tblEntities WHERE entityid = ?', [
-					dataTenantID,
-				])
-				.mtdd();
-		}
-
 		const normalizedAction = this.normalizeAction(action);
 
 		// Log the notification
@@ -59,6 +53,38 @@ export class NotificationService {
 			{ table, action: normalizedAction, tenantId: dataTenantID },
 			'Database change notification received',
 		);
+
+		// Update Redis cache if available
+		if (this.redisService && dataTenantID !== undefined && table) {
+			const serverTs = dataRecord.mtds_server_ts as number | undefined;
+
+			if (serverTs !== undefined && typeof serverTs === 'number') {
+				// Update Redis cache (non-blocking)
+				this.redisService
+					.updateTenantTableTimestamp(dataTenantID, table, serverTs)
+					.catch((error) => {
+						notificationLogger.error(
+							{ error, tenantId: dataTenantID, table, serverTs },
+							'Failed to update Redis cache',
+						);
+					});
+
+				// Update 'a:t' field for quick change detection
+				this.redisService
+					.updateAllTablesTimestamp(dataTenantID, serverTs)
+					.catch((error) => {
+						notificationLogger.error(
+							{ error, tenantId: dataTenantID, serverTs },
+							'Failed to update Redis all-tables timestamp',
+						);
+					});
+			} else {
+				notificationLogger.debug(
+					{ tenantId: dataTenantID, table, serverTs },
+					'Skipping Redis update: mtds_server_ts not found or invalid',
+				);
+			}
+		}
 
 		// Resolve primary key column and value for efficient client-side processing
 		let pkColumn: string | undefined;
@@ -88,21 +114,58 @@ export class NotificationService {
 			timestamp: new Date().toISOString(),
 		};
 
-		// Broadcast to all connected web clients subscribed to 'events'
-		this.broadcastToWebClients(JSON.stringify(eventPayload));
+		// Broadcast to devices for the affected tenant only
+		this.broadcastToWebClients(JSON.stringify(eventPayload), dataTenantID);
 	}
 
 	/**
-	 * Broadcast message to all connected web clients
+	 * Broadcast message to web clients for a specific tenant
 	 * @param payload - Message payload to send
+	 * @param tenantId - Tenant identifier (only devices for this tenant receive the event)
 	 */
-	private broadcastToWebClients(payload: string): void {
-		for (const [_deviceId, deviceEvents] of ActiveClients.web.entries()) {
-			const res = deviceEvents.get('events');
+	private broadcastToWebClients(
+		payload: string,
+		tenantId?: string | number,
+	): void {
+		// If tenantId is not provided, don't broadcast (safety measure)
+		if (tenantId === undefined) {
+			notificationLogger.warn('Attempted to broadcast event without tenant ID');
+			return;
+		}
+
+		const tenantDevices = ActiveClients.GetTenantDevices(tenantId);
+		if (!tenantDevices) {
+			notificationLogger.debug(
+				{ tenantId },
+				'No devices connected for tenant, skipping broadcast',
+			);
+			return;
+		}
+
+		let sentCount = 0;
+		for (const [deviceId, res] of tenantDevices.entries()) {
 			if (res && !res.writableEnded) {
-				res.write(`data: ${payload}\n\n`);
+				try {
+					res.write(`data: ${payload}\n\n`);
+					sentCount++;
+				} catch (error) {
+					notificationLogger.error(
+						{ error, tenantId, deviceId },
+						'Failed to send event to device',
+					);
+					// Remove failed connection
+					ActiveClients.DeleteWebDevice(tenantId, deviceId);
+				}
+			} else {
+				// Remove closed connection
+				ActiveClients.DeleteWebDevice(tenantId, deviceId);
 			}
 		}
+
+		notificationLogger.debug(
+			{ tenantId, sentCount, totalDevices: tenantDevices.size },
+			'Broadcast event to tenant devices',
+		);
 	}
 
 	private normalizeAction(action: unknown): SyncChangeAction {

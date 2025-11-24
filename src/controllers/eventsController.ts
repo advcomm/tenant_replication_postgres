@@ -8,6 +8,7 @@ import type { Request, Response } from 'express';
 import type { Knex } from 'knex';
 import { config } from '@/config/configHolder';
 import ActiveClients from '@/helpers/clients';
+import { getRedisService } from '@/index';
 import { NotificationService } from '@/services/notificationService';
 import type { AuthenticatedRequest } from '@/types/api';
 import { notificationLogger } from '@/utils/logger';
@@ -21,8 +22,10 @@ const isDevelopment =
 export class EventsController {
 	private notificationService: NotificationService;
 
-	constructor(db: Knex) {
-		this.notificationService = new NotificationService(db);
+	constructor(db: Knex, notificationService?: NotificationService) {
+		// Allow injection of NotificationService for testing or if already created
+		this.notificationService =
+			notificationService ?? new NotificationService(db, getRedisService());
 	}
 
 	/**
@@ -32,6 +35,17 @@ export class EventsController {
 	async handleEvents(req: AuthenticatedRequest, res: Response): Promise<void> {
 		const requestId = (req as Request & { requestId?: string }).requestId;
 		const deviceId = (req.query?.deviceId || req.headers?.deviceid) as string;
+		const tenantId = req.tid;
+
+		// Validate tenant ID is present
+		if (!tenantId) {
+			notificationLogger.warn(
+				{ requestId, deviceId, userId: req.sub },
+				'SSE connection rejected: missing tenant ID',
+			);
+			res.status(400).json({ error: 'Tenant ID is required' });
+			return;
+		}
 
 		// Log SSE connection attempt
 		if (isDevelopment) {
@@ -40,7 +54,7 @@ export class EventsController {
 					requestId,
 					deviceId,
 					userId: req.sub,
-					tenantId: req.tid,
+					tenantId,
 					ip: req.ip || req.socket.remoteAddress,
 				},
 				'SSE connection attempt',
@@ -51,7 +65,7 @@ export class EventsController {
 					requestId,
 					deviceId,
 					userId: req.sub,
-					tenantId: req.tid,
+					tenantId,
 				},
 				'SSE connection attempt',
 			);
@@ -63,8 +77,8 @@ export class EventsController {
 		res.setHeader('Connection', 'keep-alive');
 		res.write('data: Connected\n\n');
 
-		// Register device for events
-		ActiveClients.AddWebDeviceEvent(deviceId, 'events', res);
+		// Register device for events (tenant-based)
+		ActiveClients.AddWebDeviceEvent(tenantId, deviceId, res);
 
 		// Log successful registration
 		notificationLogger.info(
@@ -72,22 +86,49 @@ export class EventsController {
 				requestId,
 				deviceId,
 				userId: req.sub,
-				tenantId: req.tid,
-				activeConnections: ActiveClients.web.size,
+				tenantId,
+				tenantDeviceCount: ActiveClients.GetTenantDevices(tenantId)?.size ?? 0,
 			},
 			'Device registered for SSE events',
 		);
 
+		// Setup keep-alive mechanism
+		const redisService = getRedisService();
+
+		const keepAliveInterval = setInterval(() => {
+			try {
+				// Send keep-alive heartbeat
+				res.write(': keep-alive\n\n');
+
+				// Refresh Redis TTL for tenant
+				if (redisService) {
+					redisService.refreshTenantTTL(tenantId).catch((error) => {
+						notificationLogger.error(
+							{ error, tenantId },
+							'Failed to refresh Redis TTL on keep-alive',
+						);
+					});
+				}
+			} catch (error) {
+				notificationLogger.error(
+					{ error, tenantId, deviceId },
+					'Error sending keep-alive',
+				);
+			}
+		}, 30000); // 30 seconds
+
 		// Handle disconnection
 		req.on('close', () => {
-			ActiveClients.DeleteWebDevice(deviceId);
+			clearInterval(keepAliveInterval);
+			ActiveClients.DeleteWebDevice(tenantId, deviceId);
 			notificationLogger.info(
 				{
 					requestId,
 					deviceId,
 					userId: req.sub,
-					tenantId: req.tid,
-					activeConnections: ActiveClients.web.size,
+					tenantId,
+					tenantDeviceCount:
+						ActiveClients.GetTenantDevices(tenantId)?.size ?? 0,
 				},
 				'Device disconnected from SSE events',
 			);
@@ -95,12 +136,13 @@ export class EventsController {
 
 		// Handle errors
 		req.on('error', (error) => {
+			clearInterval(keepAliveInterval);
 			notificationLogger.error(
 				{
 					requestId,
 					deviceId,
 					userId: req.sub,
-					tenantId: req.tid,
+					tenantId,
 					error: error.message,
 				},
 				'SSE connection error',

@@ -9,6 +9,7 @@ import type { Knex } from 'knex';
 import { EventsController } from '@/controllers/eventsController';
 import { LoadDataController } from '@/controllers/loadDataController';
 import { SyncController } from '@/controllers/syncController';
+import { getRedisService } from '@/index';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { requestLogger } from '@/middleware/requestLogger';
 import { authenticateSSE } from '@/middleware/sseAuth';
@@ -18,6 +19,7 @@ import {
 	validateParams,
 	validateQuery,
 } from '@/middleware/validation';
+import { NotificationService } from '@/services/notificationService';
 import { SyncService } from '@/services/syncService';
 import type { AuthenticatedRequest } from '@/types/api';
 
@@ -31,9 +33,13 @@ export function createMtddRoutes(dbConnection: Knex): Router {
 	// Validate database connection
 	const db = dbConnection;
 
+	// Initialize services
+	const redisService = getRedisService();
+	const notificationService = new NotificationService(db, redisService);
+
 	// Initialize controllers
 	const loadDataController = new LoadDataController(db);
-	const eventsController = new EventsController(db);
+	const eventsController = new EventsController(db, notificationService);
 	const syncController = new SyncController(new SyncService(db));
 
 	// Create router
@@ -99,7 +105,7 @@ export function createMtddRoutes(dbConnection: Knex): Router {
 	// ============================================================================
 	// Setup channel listeners for notifications
 	// ============================================================================
-	eventsController.setupChannelListeners();
+	notificationService.setupChannelListeners();
 
 	return router;
 }

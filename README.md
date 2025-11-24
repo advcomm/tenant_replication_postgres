@@ -122,12 +122,12 @@ Receive and apply client changes (insert, update, delete).
     {
       "clientTxid": 1234567890,
       "table_name": "users",
-      "record_pk": "1",
+      "record_pk": "550e8400-e29b-41d4-a716-446655440000",  // Client-generated primary key
       "mtds_device_id": "device-123",
       "action": "insert",
       "payload": {
         "New": {
-          "id": 1,
+          "id": "550e8400-e29b-41d4-a716-446655440000",  // Must match record_pk
           "name": "John Doe",
           "email": "john@example.com"
         }
@@ -136,6 +136,8 @@ Receive and apply client changes (insert, update, delete).
   ]
 }
 ```
+
+**Note:** The `record_pk` and the primary key value in `payload.New` must match. Primary keys are generated on the client side and used as-is for syncing across devices.
 
 **Response:**
 ```json
@@ -148,7 +150,7 @@ Receive and apply client changes (insert, update, delete).
       "clientTxid": 1234567890,
       "serverTxid": 9876543210,
       "tableName": "users",
-      "pk": "1"
+      "pk": "550e8400-e29b-41d4-a716-446655440000"
     }
   ],
   "failures": []
@@ -319,26 +321,29 @@ export function authMiddleware(
 
 ## 📊 Database Schema Requirements
 
+**Important:** The SDK does **NOT** create tables or primary key columns. You must create your tables with primary keys that are **client-generated** (e.g., UUID, BIGINT, or TEXT). The SDK uses these primary keys as-is for syncing data between devices of the same tenant.
+
 Your tables must include these columns for sync functionality:
 
 ```sql
 CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
+  id BIGINT PRIMARY KEY,              -- Client-generated primary key (NOT SERIAL/AUTO_INCREMENT)
   tenant_id TEXT NOT NULL,              -- Tenant isolation column
   name TEXT,
   email TEXT,
   -- Your business columns...
   
   -- Sync tracking columns (required)
-  mtds_last_updated_txid BIGINT,         -- Server transaction ID
-  mtds_device_id TEXT,                  -- Device that made the change
-  mtds_deleted_txid BIGINT              -- Soft delete marker (NULL = not deleted)
+  mtds_server_ts BIGINT NOT NULL DEFAULT 0,  -- Server transaction ID (nanoseconds since Unix epoch)
+  mtds_client_ts BIGINT,                      -- Client timestamp (optional, milliseconds since client epoch)
+  mtds_device_id BIGINT NOT NULL DEFAULT 0,  -- Device that made the change (64-bit)
+  mtds_delete_ts BIGINT                      -- Soft delete marker (NULL = active, non-NULL = deleted)
 );
 
 -- Indexes for performance
 CREATE INDEX idx_users_tenant_id ON users(tenant_id);
-CREATE INDEX idx_users_mtds_txid ON users(mtds_last_updated_txid);
-CREATE INDEX idx_users_mtds_deleted ON users(mtds_deleted_txid) WHERE mtds_deleted_txid IS NULL;
+CREATE INDEX idx_users_mtds_server_ts ON users(mtds_server_ts);
+CREATE INDEX idx_users_mtds_deleted ON users(mtds_delete_ts) WHERE mtds_delete_ts IS NULL;
 ```
 
 **Stored Procedures (for bulk load):**
@@ -355,8 +360,8 @@ BEGIN
   SELECT *
   FROM users
   WHERE tenant_id = tenant_id_param
-    AND (mtds_last_updated_txid > last_updated_txid OR last_updated_txid = 0)
-    AND mtds_deleted_txid IS NULL;
+    AND (mtds_server_ts > last_updated_txid OR last_updated_txid = 0)
+    AND mtds_delete_ts IS NULL;
 END;
 $$ LANGUAGE plpgsql;
 ```

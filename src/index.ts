@@ -1,13 +1,16 @@
 import type { Application } from 'express';
 import type knex from 'knex';
-import { setConfig } from '@/config/configHolder';
+import { config, setConfig } from '@/config/configHolder';
 import * as knexHelper from '@/helpers/knexHelper';
 import { createPatchedKnex } from '@/helpers/knexHelper';
 import { createMtddRoutes } from '@/routes';
+import { RedisService } from '@/services/redisService';
 import type { DatabaseConfig, LibraryConfig } from '@/types/config';
 
 // Export Firebase configuration interface and ActiveClients class for users of this library
 export { default as ActiveClients, FirebaseConfig } from '@/helpers/clients';
+// Export Redis service
+export { RedisService } from '@/services/redisService';
 // Export API types for consumers
 export type {
 	AuthenticatedRequest,
@@ -21,6 +24,7 @@ export type {
 	LibraryConfig,
 	MtddBackendConfig,
 	PortalConfig,
+	RedisConfig,
 } from '@/types/config';
 
 /**
@@ -48,13 +52,47 @@ export type {
  * });
  * ```
  */
+// Global Redis service instance
+let redisService: RedisService | null = null;
+
+/**
+ * Get the Redis service instance
+ * Returns null if Redis is not configured or not initialized
+ */
+export function getRedisService(): RedisService | null {
+	return redisService;
+}
+
 export async function InitializeReplicationWithDb(
 	app: Application,
 	dbConfig: DatabaseConfig,
-	config?: LibraryConfig,
+	libraryConfig?: LibraryConfig,
 ): Promise<knex.Knex<Record<string, unknown>, unknown[]>> {
-	if (config) {
-		setConfig(config);
+	if (libraryConfig) {
+		setConfig(libraryConfig);
+	}
+
+	// Initialize Redis if configured
+	const redisConfig = config.redisConfig;
+	if (redisConfig) {
+		redisService = new RedisService({
+			host: redisConfig.host,
+			port: redisConfig.port,
+			password: redisConfig.password,
+			db: redisConfig.db,
+			keyPrefix: redisConfig.keyPrefix,
+			ttl: redisConfig.ttl,
+		});
+
+		redisService.initialize({
+			host: redisConfig.host,
+			port: redisConfig.port,
+			password: redisConfig.password,
+			db: redisConfig.db,
+			retryStrategy: redisConfig.retryStrategy,
+			enableOfflineQueue: redisConfig.enableOfflineQueue,
+			lazyConnect: redisConfig.lazyConnect,
+		});
 	}
 
 	const db = createPatchedKnex(dbConfig);

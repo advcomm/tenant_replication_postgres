@@ -80,4 +80,9 @@ export const config = {
 		const cfg = getConfig();
 		return cfg?.mtdd?.grpcInsecure ?? false;
 	},
+
+	get redisConfig() {
+		const cfg = getConfig();
+		return cfg?.redis;
+	},
 };

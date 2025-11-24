@@ -48,7 +48,7 @@ import type { FirebaseConfig } from './types';
 import {
 	addWebDeviceEvent,
 	deleteWebDevice,
-	deleteWebDeviceEvents,
+	getTenantDevices,
 	getWebClients,
 } from './webClients';
 
@@ -64,6 +64,7 @@ export type { FirebaseConfig, PushMessage };
 const ActiveClients = {
 	/**
 	 * Web clients map (for backward compatibility - direct access)
+	 * Note: Structure changed to tenant-based: Map<tenantID, Map<deviceId, Response>>
 	 */
 	web: getWebClients(),
 
@@ -109,28 +110,37 @@ const ActiveClients = {
 	},
 
 	/**
-	 * Delete a specific web device event subscription
-	 */
-	DeleteWebDeviceEvents(deviceId: string, eventName: string): void {
-		deleteWebDeviceEvents(deviceId, eventName);
-	},
-
-	/**
 	 * Add a web device event subscription
+	 * @param tenantId - Tenant identifier
+	 * @param deviceId - Device identifier
+	 * @param res - Express Response object for SSE
 	 */
 	AddWebDeviceEvent(
+		tenantId: string | number,
 		deviceId: string,
-		eventName: string,
 		res: express.Response,
 	): void {
-		addWebDeviceEvent(deviceId, eventName, res);
+		addWebDeviceEvent(tenantId, deviceId, res);
 	},
 
 	/**
-	 * Delete a web device and all its subscriptions
+	 * Delete a web device for a tenant
+	 * @param tenantId - Tenant identifier
+	 * @param deviceId - Device identifier
 	 */
-	DeleteWebDevice(deviceId: string): void {
-		deleteWebDevice(deviceId);
+	DeleteWebDevice(tenantId: string | number, deviceId: string): void {
+		deleteWebDevice(tenantId, deviceId);
+	},
+
+	/**
+	 * Get all devices for a tenant
+	 * @param tenantId - Tenant identifier
+	 * @returns Map of deviceId -> Response, or undefined if tenant has no devices
+	 */
+	GetTenantDevices(
+		tenantId: string | number,
+	): Map<string, express.Response> | undefined {
+		return getTenantDevices(tenantId);
 	},
 
 	/**

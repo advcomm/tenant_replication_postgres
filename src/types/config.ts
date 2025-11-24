@@ -80,12 +80,46 @@ export interface PortalConfig {
 }
 
 /**
+ * Redis Configuration
+ * Configuration for Redis client used for tenant timestamp caching
+ */
+export interface RedisConfig {
+	/** Redis server host */
+	host?: string;
+
+	/** Redis server port */
+	port?: number;
+
+	/** Redis password (if required) */
+	password?: string;
+
+	/** Redis database number */
+	db?: number;
+
+	/** Key prefix for all Redis keys (default: 'mtds:') */
+	keyPrefix?: string;
+
+	/** TTL in seconds for tenant keys (default: 3600) */
+	ttl?: number;
+
+	/** Connection retry options */
+	retryStrategy?: (times: number) => number | null | void;
+
+	/** Enable offline queue (default: true) */
+	enableOfflineQueue?: boolean;
+
+	/** Lazy connect (connect when first command is sent) */
+	lazyConnect?: boolean;
+}
+
+/**
  * Library Configuration
  */
 export interface LibraryConfig {
 	mtdd: MtddBackendConfig;
 	firebase?: FirebaseConfig;
 	portal?: PortalConfig;
+	redis?: RedisConfig;
 }
 
 // Minimal DatabaseConfig for consumers who want the library to own Knex
