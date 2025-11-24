@@ -70,3 +70,5 @@ src/generated/
 .git-*
 
 /docs
+.cursor
+/openspec/changes
