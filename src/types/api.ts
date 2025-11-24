@@ -6,47 +6,27 @@
 
 import type { Request } from 'express';
 
+export type JsonMap = Record<string, unknown>;
+
 /**
- * Authenticated Request (extends Express Request with auth fields)
+ * Enum representing allowed sync change actions.
  */
-export interface AuthenticatedRequest extends Request {
-	tid?: string | number; // Tenant ID from token
-	sub?: string; // Subject (user ID) from token
-	roles?: string[]; // User roles from token
-	token?: string; // JWT token
+export enum SyncChangeAction {
+	Insert = 'insert',
+	Update = 'update',
+	Delete = 'delete',
 }
 
 /**
- * Update Payload for database sync
+ * Enum representing server event types emitted over SSE.
  */
-export interface UpdatePayload {
-	New: {
-		CategoryID: number;
-		CategoryName: string;
-		VendorID: number;
-		LastUpdatedTXID: number;
-		LastUpdated: number | null;
-		DeletedTXID: number | null;
-	};
-	old: {
-		CategoryID: number;
-		CategoryName: string;
-		VendorID: number;
-		LastUpdatedTXID: number;
-		LastUpdated: number | null;
-		DeletedTXID: number | null;
-	} | null;
-}
-
-/**
- * Update Request for database sync
- */
-export interface UpdateRequest {
-	TXID: number;
-	TableName: string;
-	PK: number;
-	Action: number | null;
-	PayLoad: UpdatePayload;
+export enum ServerEventType {
+	Connected = 'connected',
+	Heartbeat = 'heartbeat',
+	Insert = 'insert',
+	Update = 'update',
+	Delete = 'delete',
+	Unknown = 'unknown',
 }
 
 /**
@@ -72,8 +52,8 @@ export interface ChannelMessage {
  */
 export interface TableChangeNotification {
 	table: string;
-	action: string;
-	data: Record<string, unknown>;
+	action: SyncChangeAction | string;
+	data: JsonMap;
 }
 
 /**
@@ -92,4 +72,121 @@ export interface SuccessResponse<T = unknown> {
 	success: boolean;
 	data?: T;
 	message?: string;
+}
+
+/**
+ * Express request augmented with authentication metadata
+ */
+export interface AuthenticatedRequest extends Request {
+	tid?: string | number;
+	sub?: string;
+	roles?: string[];
+	token?: string;
+}
+
+/**
+ * Raw change object received from the MTDS client.
+ */
+export interface SyncChangeRequest {
+	clientTxid: number | string;
+	table_name: string;
+	record_pk: string | number | null;
+	mtds_device_id: number | string;
+	action?: number | string | null;
+	payload?: string | SyncChangePayload;
+}
+
+export interface SyncChangePayload {
+	New?: JsonMap;
+	old?: JsonMap;
+}
+
+/**
+ * Normalized change used internally by the sync service.
+ */
+export interface NormalizedSyncChange {
+	clientTxid: number;
+	tableName: string;
+	deviceId: number;
+	action: SyncChangeAction;
+	pkValue: string | number | null;
+	payload?: SyncChangePayload;
+}
+
+/**
+ * Request body for /sync endpoint.
+ */
+export interface SyncChangesBody {
+	changes: SyncChangeRequest[];
+}
+
+/**
+ * Parameters provided to the sync service for processing changes.
+ */
+export interface ProcessSyncChangesParams {
+	changes: SyncChangeRequest[];
+	tenantId?: string | number;
+	userId?: string;
+	roles?: string[];
+}
+
+/**
+ * Response structure returned to MTDS clients after sync.
+ */
+export interface SyncResponse {
+	success: boolean;
+	processed: number;
+	errors: number;
+	updates: ServerSyncUpdate[];
+	failures: Array<{
+		change: {
+			clientTxid: number;
+			tableName: string;
+			action: SyncChangeAction;
+			pkValue: string | number | null;
+		};
+		message: string;
+	}>;
+}
+
+/**
+ * Update metadata sent back to clients so they can reconcile timestamps.
+ */
+export interface ServerSyncUpdate {
+	clientTxid: number;
+	serverTxid: number;
+	tableName: string;
+	pk: string | number | null;
+}
+
+/**
+ * Request payload for /sync/data endpoint.
+ */
+export interface SyncLoadRequest {
+	tables: string[];
+	lastUpdated?: number;
+	tenantId?: string | number;
+	deviceId?: string;
+}
+
+/**
+ * Additional context passed from controllers to the load service.
+ */
+export interface TableLoadContext {
+	authenticatedTenantId?: string | number;
+	userId?: string;
+	roles?: string[];
+}
+
+/**
+ * Payload sent to SSE clients.
+ */
+export interface ServerEventPayload {
+	type: ServerEventType;
+	action: SyncChangeAction;
+	table?: string;
+	pkColumn?: string;
+	pkValue?: string | number | null;
+	data?: JsonMap;
+	timestamp: string;
 }

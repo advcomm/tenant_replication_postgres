@@ -68,3 +68,7 @@ node_modules/
 src/generated/
 
 .git-*
+
+/docs
+.cursor
+/openspec/changes
